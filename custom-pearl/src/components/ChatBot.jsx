@@ -65,11 +65,10 @@ const ChatBot = () => {
     }
 
     // LAYER 2: Agar FAQ mein na ho, toh Groq API hit karein
-    // LAYER 2: Agar FAQ mein na ho, toh Groq API hit karein
     if (!botResponse) {
       try {
         const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
-          model: 'llama-3.1-8b-instant', // 🟢 Model name ko latest Groq model par update kar diya hai
+          model: 'llama-3.1-8b-instant', 
           messages: [
             { role: 'system', content: 'You are a helpful customer support assistant for Custom Pearl, an online store selling handcrafted pearl and crochet bags in Pakistan. Give short, polite answers in Roman Urdu/English.' },
             { role: 'user', content: userMsg }
@@ -78,14 +77,14 @@ const ChatBot = () => {
           max_tokens: 150
         }, {
           headers: { 
-            'Authorization': `Bearer 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`, 
+            // Yahan humne hardcoded key ki jagah environment variable use kiya hai
+            'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`, 
             'Content-Type': 'application/json'
           }
         });
         
         botResponse = response.data.choices[0].message.content;
       } catch (err) {
-        // 🟢 Error ki mazeed details console mein print karwane ke liye
         console.error("Groq API Full Error:", err.response?.data || err.message);
         botResponse = "Maaf kijiye, mujhe is sawal ka jawab dhoondne mein thori mushkil ho rahi hai. Lekin fikar na karein, aap hamari team se direct WhatsApp par baat kar sakte hain!";
         showWhatsApp = true; 

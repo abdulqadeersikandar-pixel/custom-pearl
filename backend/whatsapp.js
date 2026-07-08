@@ -1,54 +1,58 @@
-const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
+const { Client, LocalAuth } = require("whatsapp-web.js");
+const qrcode = require("qrcode-terminal");
 
-// Client initialize kar rahe hain (LocalAuth session save rakhega taake bar bar QR scan na karna pare)
-const client = new Client({
+let client = null;
+
+// Sirf local machine par WhatsApp initialize karo
+if (process.env.NODE_ENV !== "production") {
+  client = new Client({
     authStrategy: new LocalAuth(),
-    puppeteer: { headless: true }
-});
+    puppeteer: {
+      headless: true,
+    },
+  });
 
-// Jab server chale toh QR code terminal mein show ho
-client.on('qr', (qr) => {
-    console.log('\n🔴 WHATSAPP SE YEH QR CODE SCAN KAREIN (Linked Devices mein ja kar):');
+  client.on("qr", (qr) => {
+    console.log("\n🔴 Scan this QR Code:");
     qrcode.generate(qr, { small: true });
-});
+  });
 
-client.on('ready', () => {
-    console.log('✅ WhatsApp Bot is Ready and Connected!');
-});
+  client.on("ready", () => {
+    console.log("✅ WhatsApp Bot is Ready!");
+  });
 
-client.initialize();
+  client.initialize();
+} else {
+  console.log("ℹ️ Production mode: WhatsApp Bot disabled.");
+}
 
-// Message send karne ka function
 const sendWhatsAppMessage = async (customerNumber, orderDetails) => {
-    try {
-        // Number ko WhatsApp format mein convert karna (e.g., 03001234567 -> 923001234567@c.us)
-        let formattedNumber = customerNumber.trim();
-        if (formattedNumber.startsWith('0')) {
-            formattedNumber = '92' + formattedNumber.slice(1);
-        }
-        const chatId = formattedNumber + '@c.us';
+  if (!client) {
+    console.log("⚠️ WhatsApp Bot disabled in production.");
+    return;
+  }
 
-        // 🟢 Professional English Message Template
-        const message = `🎉 *Hello ${orderDetails.name},*
+  try {
+    let formattedNumber = customerNumber.trim();
 
-Your order from *Custom Pearl* has been successfully placed! 
-
-📦 *Order Summary:*
-• Total Amount: Rs. ${orderDetails.amount}
-• Tracking ID: *${orderDetails.trackingId}*
-
-🚚 *Track your order here:*
-http://localhost:5173/track-order
-
-Thank you for choosing us! ✨`;
-
-        // Message Bhejna
-        await client.sendMessage(chatId, message);
-        console.log(`✅ Message successfully sent to ${customerNumber}`);
-    } catch (error) {
-        console.error('❌ Failed to send WhatsApp message:', error);
+    if (formattedNumber.startsWith("0")) {
+      formattedNumber = "92" + formattedNumber.slice(1);
     }
+
+    const chatId = formattedNumber + "@c.us";
+
+    const message = `🎉 Hello ${orderDetails.name}
+
+Your order has been placed successfully.
+
+Tracking ID: ${orderDetails.trackingId}`;
+
+    await client.sendMessage(chatId, message);
+
+    console.log("✅ WhatsApp message sent.");
+  } catch (err) {
+    console.error(err);
+  }
 };
 
 module.exports = { sendWhatsAppMessage };

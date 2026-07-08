@@ -15,7 +15,7 @@ const Navbar = () => {
     { to: '/shop',        label: 'Shop'        },
     { to: '/my-orders',   label: 'My Orders'   },
     { to: '/track-order', label: 'Track Order' },
-    { to: '/admin',       label: 'Admin'       },
+    // { to: '/admin',       label: 'Admin'       },
   ];
 
   return (

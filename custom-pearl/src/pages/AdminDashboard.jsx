@@ -4,8 +4,10 @@ import { auth } from '../firebase';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import WhatsAppStatusCard from '../components/WhatsAppStatusCard';
+
 const INACTIVITY_MS = 2 * 60 * 1000;
 const TABS = ['All Orders', 'Manage Products', 'Settings', 'WhatsApp Bot'];
+
 const Banner = ({ type, msg }) => {
   if (!msg) return null;
   const s = {
@@ -16,11 +18,19 @@ const Banner = ({ type, msg }) => {
   return <div className={`border rounded-lg px-4 py-3 text-sm font-medium mb-4 ${s[type]||s.info}`}>{msg}</div>;
 };
 
+// 🟢 NAYA: API Token Helper Function 
+const getAuthHeaders = async () => {
+  if (auth.currentUser) {
+    const token = await auth.currentUser.getIdToken();
+    return { Authorization: `Bearer ${token}` };
+  }
+  return {};
+};
+
 const AdminDashboard = () => {
   const navigate   = useNavigate();
   const timerRef   = useRef(null);
 
-  // ── Inactivity auto-logout ─────────────────────────────────────────────────
   const resetTimer = useCallback(() => {
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(async () => {
@@ -36,7 +46,6 @@ const AdminDashboard = () => {
     return () => { events.forEach(e => window.removeEventListener(e, resetTimer)); clearTimeout(timerRef.current); };
   }, [resetTimer]);
 
-  // ── State ──────────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab]           = useState('All Orders');
   const [customOrders, setCustomOrders]     = useState([]);
   const [checkoutOrders, setCheckoutOrders] = useState([]);
@@ -44,11 +53,9 @@ const AdminDashboard = () => {
   const [paySettings, setPaySettings]       = useState([]);
   const [loading, setLoading]               = useState(true);
 
-  // Orders
   const [orderFilter, setOrderFilter] = useState('All');
   const [orderSearch, setOrderSearch] = useState('');
 
-  // Product form
   const [showForm, setShowForm] = useState(false);
   const [editId,  setEditId]   = useState(null);
   const [pName,  setPName]     = useState('');
@@ -58,29 +65,26 @@ const AdminDashboard = () => {
   const [pImg,   setPImg]      = useState(null);
   const [pSaving,setPSaving]   = useState(false);
 
-  // Password
   const [oldPw,  setOldPw]    = useState('');
   const [newPw,  setNewPw]    = useState('');
   const [confPw, setConfPw]   = useState('');
   const [pwBanner, setPwBanner] = useState({ type:'', msg:'' });
 
-  // Payment settings
   const [payEdits,  setPayEdits]  = useState({});
   const [payBanner, setPayBanner] = useState({ type:'', msg:'' });
 
-  // Business info (localStorage)
   const [bizInfo, setBizInfo]     = useState({ email:'', phone:'', whatsapp:'', insta:'', facebook:'', address:'' });
   const [bizBanner, setBizBanner] = useState({ type:'', msg:'' });
 
-  // ── Fetch ──────────────────────────────────────────────────────────────────
   const fetchAll = async () => {
     setLoading(true);
     try {
+      const headers = await getAuthHeaders(); // 🟢 NAYA: Token get kia
       const [c, ch, p, pay] = await Promise.all([
-        axios.get('http://localhost:5000/api/custom-orders'),
-        axios.get('http://localhost:5000/api/checkout-orders'),
-        axios.get('http://localhost:5000/api/products'),
-        axios.get('http://localhost:5000/api/payment-settings'),
+        axios.get('http://localhost:5000/api/custom-orders', { headers }),
+        axios.get('http://localhost:5000/api/checkout-orders', { headers }),
+        axios.get('http://localhost:5000/api/products'), // Products are public
+        axios.get('http://localhost:5000/api/payment-settings'), // PaySettings public
       ]);
       setCustomOrders(c.data);
       setCheckoutOrders(ch.data);
@@ -101,22 +105,27 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    fetchAll();
+    // Wait for auth to be ready
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      if (user) { fetchAll(); }
+    });
     const saved = localStorage.getItem('cpBizInfo');
     if (saved) setBizInfo(JSON.parse(saved));
+    
+    return () => unsubscribe();
   }, []);
 
   const handleLogout = async () => { await signOut(auth); navigate('/login'); };
 
-  // ── Orders Status Logic ────────────────────────────────────────────────────
   const handleStatusChange = async (id, type, newStatus) => {
     try {
+      const headers = await getAuthHeaders(); // 🟢 NAYA
       const endpoint = type === 'Custom'
         ? `http://localhost:5000/api/custom-orders/${id}/status`
         : `http://localhost:5000/api/checkout-orders/${id}/status`;
 
-      await axios.put(endpoint, { status: newStatus });
-      fetchAll(); // Refresh data to show new status
+      await axios.put(endpoint, { status: newStatus }, { headers });
+      fetchAll(); 
     } catch (err) {
       console.error("Failed to update status", err);
       alert("Failed to update order status.");
@@ -124,13 +133,10 @@ const AdminDashboard = () => {
   };
 
   const getStatusOptions = (type) => {
-    if (type === 'Custom') {
-      return ['Pending', 'Pending Quotation', 'Quotation Sent', 'Confirmed', 'In Production', 'Ready', 'Shipped', 'Delivered', 'Cancelled'];
-    }
+    if (type === 'Custom') return ['Pending', 'Pending Quotation', 'Quotation Sent', 'Confirmed', 'In Production', 'Ready', 'Shipped', 'Delivered', 'Cancelled'];
     return ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
   };
 
-  // ── Orders Rendering ───────────────────────────────────────────────────────
   const allOrders = [
     ...customOrders.map(o  => ({ ...o, _type:'Custom'   })),
     ...checkoutOrders.map(o => ({ ...o, _type:'Checkout' })),
@@ -139,8 +145,7 @@ const AdminDashboard = () => {
   const filteredOrders = allOrders.filter(o => {
     const matchType   = orderFilter==='All' || o._type===orderFilter;
     const q           = orderSearch.toLowerCase();
-    const matchSearch = !q || [o.CustomerName,o.CustomerPhone,o.TrackingId,o.OrderChannel]
-      .some(v => (v||'').toLowerCase().includes(q));
+    const matchSearch = !q || [o.CustomerName,o.CustomerPhone,o.TrackingId,o.OrderChannel].some(v => (v||'').toLowerCase().includes(q));
     return matchType && matchSearch;
   });
 
@@ -152,30 +157,16 @@ const AdminDashboard = () => {
     return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${m[ch]||'bg-gray-100 text-gray-600'}`}>{ic[ch]||'📦'} {ch||'Website'}</span>;
   };
 
-  // ── Excel Export Logic ────────────────────────────────────────────────────
   const handleExportExcel = () => {
     const headers = ['Order Date', 'Type', 'Tracking ID', 'Customer Name', 'Phone', 'Status', 'Total Amount', 'Payment Method'];
-
     const csvData = filteredOrders.map(order => {
       const date = order.OrderDate ? new Date(order.OrderDate).toLocaleDateString('en-GB') : '-';
       const amount = order.TotalAmount || order.EstimatedPrice || 0;
       const payment = order.PaymentMethod === 'cod' ? 'Cash on Delivery' : order.PaymentMethod || '-';
-      
-      return [
-        date,
-        order._type,
-        order.TrackingId || '-',
-        `"${order.CustomerName}"`, 
-        `"${order.CustomerPhone}"`,
-        order.OrderStatus || 'Pending',
-        amount,
-        payment
-      ].join(',');
+      return [date, order._type, order.TrackingId || '-', `"${order.CustomerName}"`, `"${order.CustomerPhone}"`, order.OrderStatus || 'Pending', amount, payment].join(',');
     });
-
     const csvString = [headers.join(','), ...csvData].join('\n');
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-    
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
@@ -186,7 +177,6 @@ const AdminDashboard = () => {
     document.body.removeChild(link);
   };
 
-  // ── Products ───────────────────────────────────────────────────────────────
   const resetForm = () => { setPName('');setPPrice('');setPDesc('');setPCat('Pearls');setPImg(null);setEditId(null);setShowForm(false); };
 
   const handleProductSave = async (e) => {
@@ -197,8 +187,10 @@ const AdminDashboard = () => {
     fd.append('name',pName); fd.append('price',pPrice); fd.append('description',pDesc); fd.append('category',pCat);
     if (pImg) fd.append('image',pImg);
     try {
-      if (editId) await axios.put(`http://localhost:5000/api/products/${editId}`,fd,{headers:{'Content-Type':'multipart/form-data'}});
-      else        await axios.post('http://localhost:5000/api/products',fd,{headers:{'Content-Type':'multipart/form-data'}});
+      const headers = await getAuthHeaders(); // 🟢 NAYA
+      const reqHeaders = { ...headers, 'Content-Type': 'multipart/form-data' };
+      if (editId) await axios.put(`http://localhost:5000/api/products/${editId}`,fd,{headers:reqHeaders});
+      else        await axios.post('http://localhost:5000/api/products',fd,{headers:reqHeaders});
       resetForm(); fetchAll();
     } catch { alert('Failed to save product.'); }
     finally { setPSaving(false); }
@@ -206,14 +198,14 @@ const AdminDashboard = () => {
 
   const handleDelete = async id => {
     if (!window.confirm('Delete this product?')) return;
-    await axios.delete(`http://localhost:5000/api/products/${id}`);
+    const headers = await getAuthHeaders(); // 🟢 NAYA
+    await axios.delete(`http://localhost:5000/api/products/${id}`, { headers });
     fetchAll();
   };
 
   const startEdit = p => { setEditId(p.Id);setPName(p.Name);setPPrice(p.Price);setPDesc(p.Description||'');setPCat(p.Category||'Pearls');setShowForm(true); };
   const getImg = p => { if (p.Images?.length>0) { const i=p.Images[0]; return i.startsWith('http')?i:`http://localhost:5000${i}`; } return null; };
 
-  // ── Password ───────────────────────────────────────────────────────────────
   const handleChangePassword = async e => {
     e.preventDefault(); setPwBanner({ type:'', msg:'' });
     if (!oldPw)         { setPwBanner({ type:'error', msg:'Please enter your current password.' }); return; }
@@ -226,16 +218,15 @@ const AdminDashboard = () => {
       setPwBanner({ type:'success', msg:'Password updated successfully!' });
       setOldPw(''); setNewPw(''); setConfPw('');
     } catch (err) {
-      setPwBanner({ type:'error', msg: err.code==='auth/wrong-password'||err.code==='auth/invalid-credential'
-        ? 'Current password is incorrect.' : 'Error updating password. Please try again.' });
+      setPwBanner({ type:'error', msg: err.code==='auth/wrong-password'||err.code==='auth/invalid-credential' ? 'Current password is incorrect.' : 'Error updating password. Please try again.' });
     }
   };
 
-  // ── Payment settings ───────────────────────────────────────────────────────
   const savePayMethod = async key => {
     setPayBanner({ type:'', msg:'' });
     try {
-      await axios.put(`http://localhost:5000/api/payment-settings/${key}`, payEdits[key]);
+      const headers = await getAuthHeaders(); // 🟢 NAYA
+      await axios.put(`http://localhost:5000/api/payment-settings/${key}`, payEdits[key], { headers });
       setPayBanner({ type:'success', msg:`${key} settings saved!` });
       setTimeout(() => setPayBanner({ type:'', msg:'' }), 3000);
     } catch { setPayBanner({ type:'error', msg:'Failed to save. Try again.' }); }
@@ -244,7 +235,6 @@ const AdminDashboard = () => {
   const updatePayEdit = (key, field, value) => setPayEdits(prev => ({ ...prev, [key]: { ...prev[key], [field]: value } }));
   const PM_ICONS = { jazzcash:'📱', easypaisa:'💚', bank:'🏦' };
 
-  // ── Business info ──────────────────────────────────────────────────────────
   const saveBizInfo = () => {
     localStorage.setItem('cpBizInfo', JSON.stringify(bizInfo));
     setBizBanner({ type:'success', msg:'Business information saved!' });
@@ -254,19 +244,14 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       <div className="max-w-7xl mx-auto px-4 py-8">
-
-        {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Admin Dashboard</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Custom Pearl — Order Management</p>
           </div>
-          <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold text-sm transition">
-            Logout
-          </button>
+          <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold text-sm transition">Logout</button>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           {[
             { label:'Total Orders',    value:allOrders.length,      color:'text-blue-600'   },
@@ -281,7 +266,6 @@ const AdminDashboard = () => {
           ))}
         </div>
 
-        {/* Tabs */}
         <div className="flex gap-1 bg-gray-200 dark:bg-gray-800 p-1 rounded-xl mb-6 w-fit flex-wrap">
           {TABS.map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)}
@@ -291,7 +275,6 @@ const AdminDashboard = () => {
           ))}
         </div>
 
-        {/* ══ ALL ORDERS ══════════════════════════════════════════════════ */}
         {activeTab==='All Orders' && (
           <div>
             <div className="flex flex-col sm:flex-row gap-3 mb-5 justify-between items-center">
@@ -304,7 +287,6 @@ const AdminDashboard = () => {
                     </button>
                   ))}
                 </div>
-                {/* ⬇️ Naya Export Button Yahan Hai ⬇️ */}
                 <button onClick={handleExportExcel} className="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2">
                   <span>📊</span> Export to Excel
                 </button>
@@ -325,10 +307,7 @@ const AdminDashboard = () => {
             ) : (
               <div className="space-y-4">
                 {filteredOrders.map((order,idx) => (
-                  <div key={`${order._type}-${order.Id}-${idx}`}
-                    className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm">
-
-                    {/* Top row */}
+                  <div key={`${order._type}-${order.Id}-${idx}`} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm">
                     <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                       <div>
                         <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -346,7 +325,6 @@ const AdminDashboard = () => {
                         <p className="text-sm text-gray-500 dark:text-gray-400">{order.CustomerPhone}</p>
                       </div>
                       
-                      {/* LIVE STATUS DROPDOWN ADDED HERE */}
                       <div className="text-right text-xs text-gray-400">
                         <p>{fmtDate(order.OrderDate)}</p>
                         <select 
@@ -359,10 +337,8 @@ const AdminDashboard = () => {
                           ))}
                         </select>
                       </div>
-
                     </div>
 
-                    {/* Custom details */}
                     {order._type==='Custom' && (
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
                         {[
@@ -386,15 +362,13 @@ const AdminDashboard = () => {
                         {order.InspirationImage && (
                           <div className="col-span-2 sm:col-span-4">
                             <p className="text-xs text-gray-400 mb-1">Inspiration Image</p>
-                            <img
-                              src={order.InspirationImage.startsWith('http')?order.InspirationImage:`http://localhost:5000${order.InspirationImage}`}
+                            <img src={order.InspirationImage.startsWith('http')?order.InspirationImage:`http://localhost:5000${order.InspirationImage}`}
                               alt="Inspiration" className="h-24 w-24 object-cover rounded-lg border border-gray-200 dark:border-gray-600" />
                           </div>
                         )}
                       </div>
                     )}
 
-                    {/* Checkout details */}
                     {order._type==='Checkout' && (
                       <div className="mt-1 space-y-2">
                         {order.ShippingAddress && (
@@ -437,13 +411,11 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* ══ MANAGE PRODUCTS ════════════════════════════════════════════ */}
         {activeTab==='Manage Products' && (
           <div>
             {!showForm ? (
               <>
-                <button onClick={() => setShowForm(true)}
-                  className="mb-5 bg-pink-600 hover:bg-pink-700 text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition">
+                <button onClick={() => setShowForm(true)} className="mb-5 bg-pink-600 hover:bg-pink-700 text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition">
                   + Add New Product
                 </button>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -500,20 +472,17 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* ══ SETTINGS ════════════════════════════════════════════════════ */}
         {activeTab==='Settings' && (
           <div className="space-y-6 max-w-2xl">
-
-            {/* Business Info */}
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm">
               <h3 className="font-bold text-gray-800 dark:text-white mb-1">🏪 Business Information</h3>
               <p className="text-xs text-gray-400 mb-4">Update your contact details shown on the website and order messages.</p>
               <Banner type={bizBanner.type} msg={bizBanner.msg} />
               <div className="space-y-3">
                 {[
-                  { key:'email',    label:'Email Address',    icon:'📧', ph:'info@custompearl.com'            },
-                  { key:'phone',    label:'Contact Phone',    icon:'📞', ph:'03001234567'                     },
-                  { key:'whatsapp', label:'WhatsApp Number',  icon:'💬', ph:'923001234567 (with country code)' },
+                  { key:'email',    label:'Email Address',   icon:'📧', ph:'info@custompearl.com'            },
+                  { key:'phone',    label:'Contact Phone',   icon:'📞', ph:'03001234567'                     },
+                  { key:'whatsapp', label:'WhatsApp Number', icon:'💬', ph:'923001234567 (with country code)' },
                   { key:'insta',    label:'Instagram Handle', icon:'📸', ph:'custompearl'                     },
                   { key:'facebook', label:'Facebook Page',    icon:'👤', ph:'custompearl'                     },
                   { key:'address',  label:'Shop Address',     icon:'📍', ph:'Street, City, Pakistan'          },
@@ -525,14 +494,12 @@ const AdminDashboard = () => {
                       className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-400" />
                   </div>
                 ))}
-                <button onClick={saveBizInfo}
-                  className="w-full bg-pink-600 hover:bg-pink-700 text-white py-2.5 rounded-lg font-bold text-sm transition mt-2">
+                <button onClick={saveBizInfo} className="w-full bg-pink-600 hover:bg-pink-700 text-white py-2.5 rounded-lg font-bold text-sm transition mt-2">
                   Save Business Info
                 </button>
               </div>
             </div>
 
-            {/* Payment Settings */}
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm">
               <h3 className="font-bold text-gray-800 dark:text-white mb-1">💳 Payment Method Settings</h3>
               <p className="text-xs text-gray-400 mb-4">Update account numbers shown to customers during checkout.</p>
@@ -544,7 +511,6 @@ const AdminDashboard = () => {
                       <h4 className="font-semibold text-gray-800 dark:text-white text-sm">
                         {PM_ICONS[pm.MethodKey]||'💳'} {pm.MethodLabel}
                       </h4>
-                      {/* Toggle */}
                       <label className="flex items-center gap-2 cursor-pointer">
                         <span className="text-xs text-gray-500 dark:text-gray-400">Active</span>
                         <div className="relative" onClick={() => updatePayEdit(pm.MethodKey,'isActive', payEdits[pm.MethodKey]?.isActive ? 0 : 1)}>
@@ -557,30 +523,24 @@ const AdminDashboard = () => {
                       <div>
                         <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Account Title</label>
                         <input type="text" value={payEdits[pm.MethodKey]?.accountTitle||''}
-                          onChange={e => updatePayEdit(pm.MethodKey,'accountTitle',e.target.value)}
-                          placeholder="e.g. Custom Pearl"
+                          onChange={e => updatePayEdit(pm.MethodKey,'accountTitle',e.target.value)} placeholder="e.g. Custom Pearl"
                           className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-400" />
                       </div>
                       <div>
-                        <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
-                          {pm.MethodKey==='bank'?'IBAN / Account Number':'Mobile Number'}
-                        </label>
+                        <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">{pm.MethodKey==='bank'?'IBAN / Account Number':'Mobile Number'}</label>
                         <input type="text" value={payEdits[pm.MethodKey]?.accountNumber||''}
-                          onChange={e => updatePayEdit(pm.MethodKey,'accountNumber',e.target.value)}
-                          placeholder={pm.MethodKey==='bank'?'PK00XXXX…':'03XXXXXXXXX'}
+                          onChange={e => updatePayEdit(pm.MethodKey,'accountNumber',e.target.value)} placeholder={pm.MethodKey==='bank'?'PK00XXXX…':'03XXXXXXXXX'}
                           className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-400" />
                       </div>
                       {pm.MethodKey==='bank' && (
                         <div>
                           <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Bank Name</label>
                           <input type="text" value={payEdits[pm.MethodKey]?.bankName||''}
-                            onChange={e => updatePayEdit(pm.MethodKey,'bankName',e.target.value)}
-                            placeholder="e.g. HBL, Meezan, UBL"
+                            onChange={e => updatePayEdit(pm.MethodKey,'bankName',e.target.value)} placeholder="e.g. HBL, Meezan, UBL"
                             className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-400" />
                         </div>
                       )}
-                      <button onClick={() => savePayMethod(pm.MethodKey)}
-                        className="w-full bg-gray-800 dark:bg-gray-700 hover:bg-gray-900 dark:hover:bg-gray-600 text-white py-2 rounded-lg text-sm font-semibold transition mt-1">
+                      <button onClick={() => savePayMethod(pm.MethodKey)} className="w-full bg-gray-800 dark:bg-gray-700 hover:bg-gray-900 dark:hover:bg-gray-600 text-white py-2 rounded-lg text-sm font-semibold transition mt-1">
                         Save {pm.MethodLabel}
                       </button>
                     </div>
@@ -589,7 +549,6 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* Password */}
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm">
               <h3 className="font-bold text-gray-800 dark:text-white mb-1">🔑 Change Password</h3>
               <p className="text-xs text-gray-400 mb-4">You must enter your current password to set a new one.</p>
@@ -606,30 +565,25 @@ const AdminDashboard = () => {
                       className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-400" />
                   </div>
                 ))}
-                <button type="submit" className="w-full bg-pink-600 hover:bg-pink-700 text-white py-2.5 rounded-lg font-bold text-sm transition mt-1">
-                  Update Password
-                </button>
+                <button type="submit" className="w-full bg-pink-600 hover:bg-pink-700 text-white py-2.5 rounded-lg font-bold text-sm transition mt-1">Update Password</button>
               </form>
             </div>
 
-            {/* Session */}
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm">
               <h3 className="font-bold text-gray-800 dark:text-white mb-1">⏱ Session</h3>
               <p className="text-xs text-gray-400 mb-4">You are automatically logged out after 2 minutes of inactivity.</p>
-              <button onClick={handleLogout}
-                className="w-full border border-red-300 text-red-600 dark:text-red-400 py-2.5 rounded-lg font-semibold text-sm hover:bg-red-50 dark:hover:bg-red-900/20 transition">
+              <button onClick={handleLogout} className="w-full border border-red-300 text-red-600 dark:text-red-400 py-2.5 rounded-lg font-semibold text-sm hover:bg-red-50 dark:hover:bg-red-900/20 transition">
                 Logout Now
               </button>
             </div>
-
           </div>
         )}
-        {/* Yeh line wahan paste karein jahan baqi tabs ka content hai */}
-{activeTab === 'WhatsApp Bot' && (
-  <div className="flex justify-center p-4">
-    <WhatsAppStatusCard />
-  </div>
-)}
+        
+        {activeTab === 'WhatsApp Bot' && (
+          <div className="flex justify-center p-4">
+            <WhatsAppStatusCard />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useOrder } from "../context/OrderContext";
+import axios from 'axios';
 import { Link } from "react-router-dom";
 
 const STATUS_COLORS = {
@@ -22,9 +22,12 @@ const CHANNEL_INFO = {
 };
 
 export default function MyOrders() {
-  const { orders, loading, error, fetchMyOrders } = useOrder();
+  const [orders, setOrders]     = useState([]);
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState('');
   
   const [phone, setPhone]       = useState('');
+  const [email, setEmail]       = useState('');
   const [searched, setSearched] = useState(false);
   const [expanded, setExpanded] = useState(null);
 
@@ -33,15 +36,35 @@ export default function MyOrders() {
     const userPhone = storedUser.phone || storedUser.customerPhone;
     if (userPhone) {
         setPhone(userPhone);
-        handleFetch(userPhone);
     }
   }, []);
 
-  const handleFetch = async (phoneToSearch = phone) => {
-    const cleaned = phoneToSearch.trim().replace(/\s+/g, '');
-    if (!cleaned) return;
+  const handleFetch = async () => {
+    const cleanedPhone = phone.trim().replace(/\s+/g, '');
+    const cleanedEmail = email.trim().toLowerCase();
+    
+    if (!cleanedPhone || !cleanedEmail) {
+      setError('Please enter both your Phone Number and Email Address.');
+      return;
+    }
+    
     setSearched(true);
-    await fetchMyOrders(cleaned);
+    setLoading(true);
+    setError('');
+
+    try {
+      // 🟢 NAYA: Secure POST request to our new backend route
+      const res = await axios.post('http://localhost:5000/api/my-orders/search', {
+        phone: cleanedPhone,
+        email: cleanedEmail
+      });
+      setOrders(res.data.data);
+    } catch (err) {
+      setOrders([]);
+      setError(err.response?.data?.message || 'Failed to fetch orders. Make sure phone and email match.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatDate = (d) => {
@@ -55,45 +78,47 @@ export default function MyOrders() {
   return (
     <div className="min-h-screen bg-[#fdf8f3] p-4 md:p-8 font-sans">
       <div className="max-w-3xl mx-auto">
-        
-        {/* Header */}
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 mb-8 text-center sm:text-left">
           <span className="text-5xl">🌸</span>
           <div>
             <h1 className="text-3xl font-extrabold text-[#8b5e3c] m-0">Order History</h1>
-            <p className="text-gray-500 text-sm mt-1">View your complete order history using your phone number</p>
+            <p className="text-gray-500 text-sm mt-1">View your complete order history securely</p>
           </div>
         </div>
 
-        {/* Search Box */}
         <div className="bg-white rounded-2xl p-5 md:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.08)] mb-6">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">📞 Phone Number</label>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <input
-              className="flex-1 px-4 py-3 rounded-xl border-2 border-[#e0d5c5] text-[15px] focus:outline-none focus:border-[#c9a96e] tracking-wide w-full transition-colors"
-              placeholder="e.g., 03XXXXXXXXX"
-              value={phone}
-              onChange={e => setPhone(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleFetch()}
-            />
-            <button 
-              onClick={() => handleFetch()} 
-              disabled={loading} 
-              className="px-8 py-3 bg-gradient-to-br from-[#c9a96e] to-[#8b5e3c] text-white font-bold rounded-xl hover:opacity-90 transition-opacity w-full sm:w-auto disabled:opacity-70 whitespace-nowrap"
-            >
-              {loading ? 'Searching...' : 'Search Orders'}
-            </button>
+          <div className="flex flex-col sm:flex-row gap-3 mb-3">
+            <div className="flex-1">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">📞 Phone Number</label>
+              <input
+                className="w-full px-4 py-3 rounded-xl border-2 border-[#e0d5c5] text-[15px] focus:outline-none focus:border-[#c9a96e] transition-colors"
+                placeholder="03XXXXXXXXX"
+                value={phone} onChange={e => setPhone(e.target.value)}
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">📧 Email Address</label>
+              <input
+                type="email"
+                className="w-full px-4 py-3 rounded-xl border-2 border-[#e0d5c5] text-[15px] focus:outline-none focus:border-[#c9a96e] transition-colors"
+                placeholder="your@email.com"
+                value={email} onChange={e => setEmail(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleFetch()}
+              />
+            </div>
           </div>
-          {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
+          <button onClick={handleFetch} disabled={loading} 
+            className="w-full px-8 py-3 mt-2 bg-gradient-to-br from-[#c9a96e] to-[#8b5e3c] text-white font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-70">
+            {loading ? 'Searching...' : 'Search Orders'}
+          </button>
+          {error && <p className="text-red-600 text-sm mt-3 text-center">{error}</p>}
         </div>
 
-        {/* Orders List */}
         {orders.length > 0 && (
           <div className="flex flex-col gap-4">
             <p className="text-gray-500 text-sm font-medium">
               <strong className="text-gray-800">{orders.length}</strong> order{orders.length > 1 ? 's' : ''} found
             </p>
-            
             {orders.map((order, i) => {
               const isOpen    = expanded === i;
               const isCustom  = order.OrderType === 'custom';
@@ -102,12 +127,7 @@ export default function MyOrders() {
 
               return (
                 <div key={i} className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.05)] overflow-hidden border border-gray-100 transition-all hover:shadow-md">
-                  
-                  {/* Card Header */}
-                  <div 
-                    className="flex justify-between items-center p-4 sm:p-5 cursor-pointer hover:bg-gray-50 transition-colors"
-                    onClick={() => setExpanded(isOpen ? null : i)}
-                  >
+                  <div className="flex justify-between items-center p-4 sm:p-5 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => setExpanded(isOpen ? null : i)}>
                     <div className="flex items-center gap-4">
                       <span className="text-3xl">{isCustom ? '🎨' : '🛍️'}</span>
                       <div>
@@ -121,30 +141,21 @@ export default function MyOrders() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span 
-                        className="px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold whitespace-nowrap"
-                        style={{ background: statusCfg.bg, color: statusCfg.color, border: `1px solid ${statusCfg.border}` }}
-                      >
+                      <span className="px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold whitespace-nowrap" style={{ background: statusCfg.bg, color: statusCfg.color, border: `1px solid ${statusCfg.border}` }}>
                         {order.OrderStatus}
                       </span>
                       <span className="text-gray-400 text-xs">{isOpen ? '▲' : '▼'}</span>
                     </div>
                   </div>
 
-                  {/* Tracking ID always visible */}
                   <div className="px-4 sm:px-5 pb-4 flex flex-wrap items-center gap-2">
                     <span className="text-gray-400 text-xs font-medium">🔖 Tracking ID:</span>
-                    <code className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-bold tracking-wide">
-                      {order.TrackingId || '—'}
-                    </code>
+                    <code className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-bold tracking-wide">{order.TrackingId || '—'}</code>
                   </div>
 
-                  {/* Expanded Details */}
                   {isOpen && (
                     <div className="px-4 sm:px-5 pb-5">
                       <hr className="border-[#f0e8dc] mb-4" />
-
-                      {/* Amount */}
                       <div className="flex justify-between items-center bg-[#fdf8f3] p-3 sm:p-4 rounded-xl mb-5">
                         <span className="text-gray-600 text-xs sm:text-sm font-medium">{isCustom ? 'Estimated Price' : 'Total Amount'}</span>
                         <span className="font-extrabold text-[#8b5e3c] text-lg sm:text-xl">
@@ -163,28 +174,13 @@ export default function MyOrders() {
 
                         {!isCustom && <>
                           <InfoRow label="Shipping Address" value={order.ShippingAddress} full />
-                          <InfoRow label="Payment Method"
-                            value={order.PaymentMethod === 'cod' ? '💵 Cash on Delivery'
-                              : order.PaymentMethod === 'bank' ? '🏦 Bank Transfer'
-                              : order.PaymentMethod === 'social' ? `${channel.icon} ${channel.label}`
-                              : '💳 Online Payment'} />
-                          {order.CartItems.map((item, i) => {
-  // Case-sensitive masle ko handle karne ke liye variables
-  const itemName = item.name || item.Name || 'Unknown Item';
-  const itemQty = item.quantity || item.qty || 1;
-  const itemPrice = Number(item.price || item.Price || 0);
-
-  return (
-    <div key={i} className="flex justify-between items-center bg-[#fdf8f0] p-2 sm:p-3 rounded-lg text-xs sm:text-sm text-gray-700 mt-1">
-      <span>
-        {itemName} <span className="text-gray-400 mx-1">×</span> {itemQty}
-      </span>
-      <span className="font-bold text-[#8b5e3c]">
-        {itemPrice > 0 ? `Rs. ${(itemPrice * itemQty).toLocaleString()}` : 'TBD'}
-      </span>
-    </div>
-  );
-})}
+                          <InfoRow label="Payment Method" value={order.PaymentMethod === 'cod' ? '💵 Cash on Delivery' : order.PaymentMethod === 'bank' ? '🏦 Bank Transfer' : order.PaymentMethod === 'social' ? `${channel.icon} ${channel.label}` : '💳 Online Payment'} />
+                          {order.CartItems.map((item, idx) => (
+                            <div key={idx} className="flex justify-between items-center bg-[#fdf8f0] p-2 sm:p-3 rounded-lg text-xs sm:text-sm text-gray-700 mt-1">
+                              <span>{item.name || item.Name || 'Unknown Item'} <span className="text-gray-400 mx-1">×</span> {item.quantity || item.qty || 1}</span>
+                              <span className="font-bold text-[#8b5e3c]">{Number(item.price || item.Price || 0) > 0 ? `Rs. ${(Number(item.price || item.Price || 0) * (item.quantity || item.qty || 1)).toLocaleString()}` : 'TBD'}</span>
+                            </div>
+                          ))}
                         </>}
 
                         {isCustom && <>
@@ -194,7 +190,6 @@ export default function MyOrders() {
                           {order.Dimensions && <InfoRow label="Dimensions" value={order.Dimensions} />}
                           {order.SelectedItemName && <InfoRow label="Selected Item" value={order.SelectedItemName} />}
                           {order.OrderDescription && <InfoRow label="Details" value={order.OrderDescription} full />}
-
                           {(!order.TotalAmount || order.TotalAmount == 0) && (
                             <div className="col-span-1 sm:col-span-2 bg-[#fff8e1] p-3 sm:p-4 rounded-xl flex items-start gap-3 border border-[#ffe082] mt-2">
                               <span className="text-lg">📩</span>
@@ -205,7 +200,6 @@ export default function MyOrders() {
                           )}
                         </>}
                       </div>
-
                       <hr className="border-[#f0e8dc] my-5" />
                       <StatusTimeline status={order.OrderStatus} isCustom={isCustom} />
                     </div>
@@ -219,26 +213,20 @@ export default function MyOrders() {
         {searched && orders.length === 0 && !error && !loading && (
           <div className="text-center py-12">
             <span className="text-6xl">📭</span>
-            <p className="text-gray-500 mt-4 text-lg">No orders found for this phone number.</p>
+            <p className="text-gray-500 mt-4 text-lg">No orders found for this phone and email combination.</p>
           </div>
         )}
 
-        {/* Link to Track Order */}
         <div className="text-center mt-8 pb-8">
           <p className="text-gray-500 text-sm">
-            Have a Tracking ID? →{' '}
-            <Link to="/track-order" className="text-[#c9a96e] font-bold hover:underline">
-              Track Order
-            </Link>
+            Have a Tracking ID? → <Link to="/track-order" className="text-[#c9a96e] font-bold hover:underline">Track Order</Link>
           </p>
         </div>
-
       </div>
     </div>
   );
 }
 
-// ── Status Timeline ──────────────────────────────────────
 function StatusTimeline({ status, isCustom }) {
   const checkoutSteps = ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered'];
   const customSteps   = ['Pending Quotation', 'Quotation Sent', 'Confirmed', 'In Production', 'Shipped', 'Delivered'];
@@ -250,22 +238,16 @@ function StatusTimeline({ status, isCustom }) {
       <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-4">📍 Order Progress</p>
       <div className="flex overflow-x-auto pb-2 scrollbar-hide">
         {steps.map((step, i) => {
-          const done    = i < current;
-          const active  = i === current;
-          const cancel  = status === 'Cancelled';
+          const done   = i < current;
+          const active = i === current;
+          const cancel = status === 'Cancelled';
           return (
             <div key={step} className="flex flex-col items-center flex-1 min-w-[70px] relative">
               <div className="flex items-center w-full relative justify-center mb-2">
-                <div className={`w-3.5 h-3.5 rounded-full z-10 shrink-0 transition-all ${
-                  cancel && active ? 'bg-red-500' : active ? 'bg-[#c9a96e] ring-4 ring-[#c9a96e]/30' : done ? 'bg-green-500' : 'bg-gray-200'
-                }`} />
-                {i < steps.length - 1 && (
-                  <div className={`absolute left-1/2 top-1.5 w-full h-[2px] z-0 ${done ? 'bg-green-500' : 'bg-gray-200'}`} />
-                )}
+                <div className={`w-3.5 h-3.5 rounded-full z-10 shrink-0 transition-all ${cancel && active ? 'bg-red-500' : active ? 'bg-[#c9a96e] ring-4 ring-[#c9a96e]/30' : done ? 'bg-green-500' : 'bg-gray-200'}`} />
+                {i < steps.length - 1 && <div className={`absolute left-1/2 top-1.5 w-full h-[2px] z-0 ${done ? 'bg-green-500' : 'bg-gray-200'}`} />}
               </div>
-              <span className={`text-[10px] sm:text-[11px] text-center leading-tight px-1 ${
-                active ? 'font-bold text-[#8b5e3c]' : done ? 'font-medium text-green-700' : 'text-gray-400'
-              }`}>
+              <span className={`text-[10px] sm:text-[11px] text-center leading-tight px-1 ${active ? 'font-bold text-[#8b5e3c]' : done ? 'font-medium text-green-700' : 'text-gray-400'}`}>
                 {step}
               </span>
             </div>
@@ -276,7 +258,6 @@ function StatusTimeline({ status, isCustom }) {
   );
 }
 
-// ── InfoRow Helper ───────────────────────────────────────
 function InfoRow({ label, value, full }) {
   return (
     <div className={`flex flex-col gap-1 ${full ? 'sm:col-span-2' : ''}`}>

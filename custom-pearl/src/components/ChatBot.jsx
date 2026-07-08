@@ -41,8 +41,9 @@ const ChatBot = () => {
     'gift': 'Ji bilkul! Agar aap kisi ko gift bhejna chahte hain, toh hum bag ki special gift wrapping aur custom note bhi add kar sakte hain.'
   };
 
-  const scrollToBottom = () => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  useEffect(scrollToBottom, [messages]);
+  useEffect(() => {
+  chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+}, [messages]);
 
   const handleSend = async () => {
     if (!input.trim()) return;

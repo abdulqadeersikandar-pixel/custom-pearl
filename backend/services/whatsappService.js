@@ -1,3 +1,4 @@
+const isProduction = process.env.NODE_ENV === "production";
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcodeTerminal = require('qrcode-terminal');
 const qrcode = require('qrcode'); // 🟢 Naya package import kiya
@@ -6,14 +7,46 @@ const qrcode = require('qrcode'); // 🟢 Naya package import kiya
 let botStatus = 'INITIALIZING'; // Status: INITIALIZING, QR_READY, CONNECTED, DISCONNECTED
 let currentQRDataUrl = ''; // Yahan QR image save hogi
 
-const client = new Client({
-    authStrategy: new LocalAuth(),
-    puppeteer: { 
-        headless: true,
-        executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', 
-        args: ['--no-sandbox', '--disable-setuid-sandbox'] 
-    }
-});
+let client = null;
+
+if (!isProduction) {
+    client = new Client({
+        authStrategy: new LocalAuth(),
+        puppeteer: {
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        }
+    });
+
+    client.on('qr', async (qr) => {
+        console.log('\n🔴 TERMINAL SCANNER:');
+        qrcodeTerminal.generate(qr, { small: true });
+
+        try {
+            currentQRDataUrl = await qrcode.toDataURL(qr);
+            botStatus = 'QR_READY';
+        } catch (err) {
+            console.error(err);
+        }
+    });
+
+    client.on('ready', () => {
+        console.log('✅ WhatsApp Bot is Ready and Connected!');
+        botStatus = 'CONNECTED';
+        currentQRDataUrl = '';
+    });
+
+    client.on('disconnected', (reason) => {
+        console.log('❌ WhatsApp Bot Disconnected:', reason);
+        botStatus = 'DISCONNECTED';
+    });
+
+    client.initialize();
+
+} else {
+    console.log("✅ Production Mode - WhatsApp Bot Disabled");
+    botStatus = "DISABLED";
+}
 
 // 🟢 Jab QR Code generate ho (Terminal aur Frontend dono ke liye)
 client.on('qr', async (qr) => {
@@ -53,6 +86,10 @@ const getWhatsAppStatus = () => {
 
 // Message send karne ka main function (Purana wala hi hai)
 const sendWhatsAppNotification = async (customerName, phone, orderNumber, trackingId) => {
+   if (!client) {
+    console.log("WhatsApp Bot disabled in production.");
+    return true;
+}
     try {
         if (!phone) return false;
 

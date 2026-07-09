@@ -74,7 +74,7 @@ app.get('/api/products', async (req, res) => {
 app.post('/api/products', verifyAdmin, upload.single('image'), async (req, res) => { 
     try {
         const { name, price, description, category, subCategory } = req.body;
-        const images = req.file ? JSON.stringify([`req.file.path`]) : JSON.stringify([]);
+        const images = req.file ? JSON.stringify([req.file.path]) : JSON.stringify([]);
         
         await db.collection('Products').add({
             Name: name, Price: Number(price), Description: description || '', Images: images,
@@ -93,7 +93,7 @@ app.put('/api/products/:id', verifyAdmin, upload.single('image'), async (req, re
             Category: category || 'Pearls', SubCategory: subCategory || 'Shoulder Bag',
             UpdatedAt: new Date().toISOString()
         };
-        if (req.file) updateData.Images = JSON.stringify([`req.file.path`]);
+        if (req.file) updateData.Images = JSON.stringify([req.file.path]);
         
         await db.collection('Products').doc(req.params.id).update(updateData);
         res.json({ message: 'Product updated!' });
@@ -112,7 +112,7 @@ app.post('/api/custom-orders', upload.single('image'), async (req, res) => {
         const { customerName, phone, customerPhone, email, customerEmail, bagType, color, pearlColor, size, bagSize, dimensions, orderDescription, orderChannel, selectedCategory } = req.body;
         const resolvedPhone = (phone || customerPhone || '').trim();
         const resolvedEmail = (email || customerEmail || '').trim(); 
-        const imageUrl      = req.file ? `req.file.path` : '';
+        const imageUrl      = req.file ? req.file.path : '';
         const trackingId    = generateTrackingId('CPO');
 
         await db.collection('CustomOrders').add({
@@ -278,7 +278,7 @@ app.get('/api/reviews/all', verifyAdmin, async (req, res) => {
 app.post('/api/reviews', upload.single('image'), async (req, res) => { 
     try {
         const { customerName, reviewText, rating } = req.body;
-        const photoUrl = req.file ? `req.file.path` : '';
+        const photoUrl = req.file ? req.file.path : '';
         await db.collection('Reviews').add({
             CustomerName: customerName || '', ReviewText: reviewText || '', CustomerPhotoUrl: photoUrl,
             Rating: Number(rating) || 5, IsPublished: 0, CreatedAt: new Date().toISOString()

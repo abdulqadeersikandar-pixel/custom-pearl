@@ -1,249 +1,425 @@
-# Custom Pearl
+# ✨ Custom Pearl
 
-Custom Pearl is a modern full-stack e-commerce platform developed for handcrafted pearl and crochet bags. The application enables customers to browse products, customize bag designs, place orders, track order status, and interact with an AI-powered customer support assistant.
-
-The project follows a scalable client-server architecture using React for the frontend, Node.js and Express for the backend, Firebase Firestore for cloud database services, Firebase Authentication for secure user management, and Groq AI for intelligent customer support.
+A modern full-stack e-commerce platform for **custom handmade Pearl and Crochet bags**, allowing customers to personalize their bags, place orders, track them, and communicate directly with the seller.
 
 ---
 
-## Project Overview
+## 🌐 Live Demo
 
-Custom Pearl was built to provide a seamless online shopping experience for handcrafted fashion products while demonstrating modern full-stack web development practices.
+Frontend:
+https://custompearl.netlify.app
 
-The platform focuses on:
-
-- Responsive user experience
-- Product customization
-- Secure authentication
-- Cloud database integration
-- AI-powered customer support
-- Scalable architecture
+Backend:
+https://custom-pearl-backend.onrender.com
 
 ---
 
-## Key Features
+# 📸 Preview
 
-### Customer
+(Add screenshots here)
 
-- User Registration & Login
-- Firebase Authentication
-- Browse Products
-- Product Customization
+| Home | Products |
+|------|----------|
+| Screenshot | Screenshot |
+
+| Custom Order | Admin Dashboard |
+|--------------|----------------|
+| Screenshot | Screenshot |
+
+---
+
+# 🚀 Features
+
+## 🛍 Customer Features
+
+- Browse handmade Pearl & Crochet bags
+- Product Categories
+- Product Details
+- Search Products
+- Responsive Design
+- Dark / Light Mode
 - Shopping Cart
-- Checkout
+- Quantity Management
+- Checkout System
+- Cash on Delivery
 - Order Tracking
-- Order History
-- AI Customer Support Chatbot
-- WhatsApp Support
-
-### Administrator
-
-- Admin Dashboard
-- Product Management
-- Order Management
-- Customer Management
+- Custom Bag Ordering
+- Image Upload for Custom Design
+- Size Selection
+- Colour Selection
+- Custom Description
+- WhatsApp Order Confirmation
+- Instagram Order Confirmation
+- Tracking ID Generation
+- Contact Page
+- FAQ
+- About Page
 
 ---
 
-## Technology Stack
+## 🎨 Custom Bag Features
 
-### Frontend
+Customers can fully customize their own bags.
+
+### Available Options
+
+- Pearl Bags
+- Crochet Bags
+
+Users can select
+
+- Bag Type
+- Size
+- Dimensions
+- Colour
+- Description
+- Inspiration Image
+
+Every order receives a unique tracking ID.
+
+Example
+
+```
+CPO-924613
+```
+
+---
+
+# 📦 Order Tracking
+
+Customers can track orders using the generated Tracking ID.
+
+Example
+
+```
+PRL-482641
+```
+
+Shows
+
+- Pending
+- Processing
+- Completed
+
+---
+
+# 👨‍💼 Admin Dashboard
+
+Secure Admin Panel with Firebase Authentication.
+
+Admin can
+
+- Login
+- Manage Products
+- Add Products
+- Edit Products
+- Delete Products
+- View Checkout Orders
+- View Custom Orders
+- Update Order Status
+- View Customer Details
+- Upload Product Images
+- Dashboard Analytics
+
+---
+
+# 🛒 Checkout System
+
+Supports
+
+- Customer Information
+- Shipping Address
+- Order Summary
+- Payment Method (Cash on Delivery)
+
+Automatically generates
+
+- Tracking ID
+
+---
+
+# ☁ Image Upload
+
+Images are uploaded using
+
+- Cloudinary
+
+Customers can upload custom bag inspiration images.
+
+---
+
+# 📱 WhatsApp Integration
+
+Customers can confirm orders directly through WhatsApp.
+
+Automatically includes
+
+- Customer Name
+- Bag Type
+- Size
+- Colour
+- Description
+- Tracking ID
+
+---
+
+# 📸 Instagram Integration
+
+Customers can also confirm orders through Instagram DM.
+
+---
+
+# 🔥 Firebase
+
+Used for
+
+- Authentication
+- Firestore Database
+
+---
+
+# 🗄 Database Collections
+
+## Products
+
+Stores
+
+- Product Name
+- Price
+- Category
+- Images
+- Stock
+
+---
+
+## CheckoutOrders
+
+Stores
+
+- Customer Information
+- Shipping Address
+- Order Status
+- Tracking ID
+- Payment Method
+
+---
+
+## CustomOrders
+
+Stores
+
+- Customer Details
+- Bag Information
+- Colour
+- Size
+- Description
+- Uploaded Image
+- Tracking ID
+
+---
+
+# ⚙ Tech Stack
+
+## Frontend
 
 - React.js
-- Vite
-- Tailwind CSS
-- React Router DOM
+- React Router
 - Axios
+- Tailwind CSS
 
-### Backend
+## Backend
 
 - Node.js
 - Express.js
 
-### Database
+## Database
 
 - Firebase Firestore
 
-### Authentication
+## Storage
+
+- Cloudinary
+
+## Authentication
 
 - Firebase Authentication
 
-### Artificial Intelligence
+## Deployment
 
-- Groq API
+Frontend
 
-### Other Services
+- Netlify
 
-- WhatsApp Integration
+Backend
 
----
-
-## System Architecture
-
-```
-                React Frontend
-                       │
-                       ▼
-             Node.js + Express API
-                       │
-      ┌────────────────┼────────────────┐
-      ▼                ▼                ▼
-Firebase Auth   Firebase Firestore    Groq AI
-```
+- Render
 
 ---
 
-## Project Structure
+# 📁 Project Structure
 
 ```
-Custom Pearl
+CustomPearl
 │
-├── backend
-│   ├── services
-│   ├── routes
-│   ├── server.js
-│   ├── package.json
-│   └── .env.example
-│
-├── custom-pearl
-│   ├── public
+├── client
 │   ├── src
-│   ├── package.json
-│   └── vite.config.js
+│   ├── components
+│   ├── pages
+│   ├── context
+│   ├── hooks
+│   └── assets
 │
-├── custom-pearl-preview.png
-├── README.md
-└── .gitignore
+├── server
+│   ├── routes
+│   ├── services
+│   ├── middleware
+│   ├── firebase
+│   ├── uploads
+│   └── db.js
+│
+└── README.md
 ```
 
 ---
 
-## Installation
+# 🚀 Installation
 
-Clone the repository.
+## Clone Repository
 
 ```bash
-git clone https://github.com/abdulqadeersikandar-pixel/custom-pearl.git
+git clone https://github.com/abdulqadeersikandar-pixel/CustomPearl.git
 ```
 
-### Frontend
+Move into project
 
 ```bash
-cd custom-pearl
-npm install
-npm run dev
+cd CustomPearl
 ```
 
-### Backend
+Install frontend
 
 ```bash
-cd backend
+cd client
 npm install
+```
+
+Install backend
+
+```bash
+cd ../server
+npm install
+```
+
+---
+
+# ▶ Run Project
+
+Frontend
+
+```bash
 npm start
 ```
 
----
+Backend
 
-## Environment Variables
-
-Create a `.env` file inside the backend directory.
-
-```env
-PORT=5000
-
-GROQ_API_KEY=YOUR_GROQ_API_KEY
-
-FIREBASE_API_KEY=YOUR_FIREBASE_API_KEY
-FIREBASE_AUTH_DOMAIN=YOUR_FIREBASE_AUTH_DOMAIN
-FIREBASE_PROJECT_ID=YOUR_FIREBASE_PROJECT_ID
-FIREBASE_STORAGE_BUCKET=YOUR_FIREBASE_STORAGE_BUCKET
-FIREBASE_MESSAGING_SENDER_ID=YOUR_FIREBASE_MESSAGING_SENDER_ID
-FIREBASE_APP_ID=YOUR_FIREBASE_APP_ID
+```bash
+node server.js
 ```
 
-Never commit your `.env` file or API keys to GitHub.
+---
+
+# 🔑 Environment Variables
+
+Create
+
+```
+.env
+```
+
+Add
+
+```env
+PORT=
+
+FIREBASE_PROJECT_ID=
+FIREBASE_PRIVATE_KEY=
+FIREBASE_CLIENT_EMAIL=
+
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_WHATSAPP_NUMBER=
+```
 
 ---
 
-## Database Migration
-
-The initial version of Custom Pearl was developed using Microsoft SQL Server as the primary database.
-
-To improve scalability, cloud deployment, and maintenance, the project was migrated to Firebase Firestore. The migration preserved the application's business logic while enabling a cloud-native architecture with simplified deployment and better integration with Firebase services.
-
----
-
-## AI Customer Support
-
-The integrated AI assistant provides:
-
-- Frequently Asked Questions
-- AI-generated customer support
-- Roman Urdu & English responses
-- WhatsApp fallback support
-- Fast response generation using Groq AI
-
----
-
-## Future Improvements
-
-- Online Payment Gateway Integration
-- Email Notifications
-- Product Reviews & Ratings
-- Wishlist
-- Admin Analytics Dashboard
-- AI Product Recommendations
-- Multi-language Support
-
----
-
-## Preview
-
-Project screenshots will be added in future updates.
-
----
-
-## Development Status
-
-Current Version: Phase 2
-
-Completed
-
-- Firebase Authentication
-- Firebase Firestore Migration
-- Product Customization
-- Shopping Cart
-- Order Tracking
-- AI Chatbot
-- WhatsApp Integration
-
-Planned
+# 📈 Future Improvements
 
 - Online Payments
-- Analytics Dashboard
 - Email Notifications
-- Product Reviews
+- Wishlist
+- Reviews & Ratings
+- Coupons
+- Product Filtering
+- Sales Dashboard
+- Inventory Alerts
+- Multiple Admin Accounts
+- Customer Accounts
+- Order History
+- Notifications
 
 ---
 
-## Author
+# 📱 Responsive
+
+Works on
+
+- Desktop
+- Laptop
+- Tablet
+- Mobile
+
+---
+
+# 👨‍💻 Author
 
 **Abdul Qadeer Sikandar**
 
-BS Software Engineering  
-University of Gujrat
+Software Engineering Student
 
-GitHub
+Frontend Developer
 
-https://github.com/abdulqadeersikandar-pixel
+Full Stack Web Developer
 
 LinkedIn
 
 https://www.linkedin.com/in/abdulqadeersikandar
 
+Portfolio
+
+https://abdulqadeer-44.netlify.app
+
+GitHub
+
+https://github.com/abdulqadeersikandar-pixel
 
 ---
 
-## License
+# ⭐ Support
 
-This project is released under the MIT License.
+If you like this project,
+
+⭐ Star the repository
+
+🍴 Fork it
+
+Share your feedback.
+
+---
+
+# 📄 License
+
+This project is developed for educational and portfolio purposes.

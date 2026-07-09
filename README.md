@@ -70,25 +70,20 @@ Dark Mode	✅
   Admin Dashboard
 ```
 ---
-# 📸 Project Preview
-
-## 🏠 Home Page
+📸 Project Preview
+🏠 Home Page
 ![Home Page](./assets/Home.png)
-
-## 🌗 Home — Filters & Dark Theme
-![Home Filters and Dark Theme](./assets/Home_Filters+DarkTheme.png)
-
-## 🛒 Shopping Cart
+🌗 Home — Filters & Dark Theme
+![Home Filters and Dark Theme](./assets/Home_Filters%2BDarkTheme.png)
+🛒 Shopping Cart
 ![Shopping Cart](./assets/Cart.png)
-
-## 🎨 Custom Bag Builder & AI Chatbot
-![Custom Bag Builder and AI Chatbot](./assets/Custom+Chatbot.png)
-
-## 📦 Order Tracking
+🎨 Custom Bag Builder & Chatbot
+![Custom Bag Builder and Chatbot](./assets/Custom%2BChatbot.png)
+📦 Order Tracking
 ![Order Tracker](./assets/Order_Tracker.png)
-
-## 👨‍💼 Admin Dashboard
-![Admin Dashboard](./assets/Admin_Dashboard.png)---
+👨‍💼 Admin Dashboard
+![Admin Dashboard](./assets/Admin_Dashboard.png)
+---
 💡 Why Custom Pearl?
 Most handmade bag businesses rely on manual communication through social media, which makes order management slow and difficult.
 Custom Pearl digitizes this entire workflow by providing:

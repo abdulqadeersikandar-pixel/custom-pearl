@@ -48,6 +48,7 @@ export default function TrackOrder() {
     
     try {
       const data = await trackSingleOrder(tid);
+      console.log(data);
       setOrder(data.data);
     } catch (err) {
       setError(err.message || 'Unable to connect to the server. Please try again.');

@@ -9,7 +9,7 @@ export const OrderProvider = ({ children }) => {
     const [error, setError] = useState(null);
     
     // Base URL for API
-    const API_URL = 'https://custom-pearl-backend.onrender.com';
+    const API_URL = 'https://custom-pearl-backend.onrender.com/api';
 
     const fetchMyOrders = async (phone) => {
         if (!phone) return;

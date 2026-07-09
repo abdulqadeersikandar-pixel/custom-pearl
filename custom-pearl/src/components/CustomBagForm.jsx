@@ -6,8 +6,8 @@ import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 
 const BAG_OPTIONS = {
-  Pearls:  ['Mini Pearl Bag', 'Shoulder Pearl Bag', 'Tote Pearl Bag', 'Pearl Clutch'],
-  Crochet: ['Mini Crochet Bag', 'Crochet Shoulder Bag', 'Crochet Tote', 'Crochet Clutch'],
+  Pearls:  [ 'Evening Pearl Clutch','Mini Pearl Clutch','Mobile Crossbody Bag',"Card Holder Bag"],
+  Crochet: ['Mini Crochet Bag',  'Crochet Tote',  'Crochet Wallet','Crossbody Bag','Hobo Bag','Floral Bag','Phone Pouch Bag'],
 };
 
 // Dimensions per size (inches)
@@ -159,25 +159,65 @@ const CustomBagForm = () => {
       setBanner({ type: '', msg: '' });
 
       // Open channel after short delay so user sees tracking ID first
-      setTimeout(() => {
-        if (channel === 'WhatsApp') {
-          const dimText = `${dims.length}" × ${dims.width}" × ${dims.height}"`;
-          const msg =
-            `Hi Custom Pearl! I'd like to place a custom bag order.%0A%0A` +
-            `Name: ${formData.customerName}%0A` +
-            `Phone: ${formData.phone}%0A` +
-            `Category: ${category}%0A` +
-            `Bag Type: ${formData.bagType}%0A` +
-            `Size: ${formData.size} (${dimText})%0A` +
-            `Colour: ${formData.color}%0A` +
-            `Description: ${formData.orderDescription}%0A%0A` +
-            `Tracking ID: ${trackingId}`;
-          window.open(`https://wa.me/923094677278?text=${msg}`, '_blank');
-        } else if (channel === 'Instagram') {
-          window.open('https://www.instagram.com/custompearl/', '_blank');
-        }
-        // Website: stay on page, tracking ID visible
-      }, 800);
+     setTimeout(() => {
+
+    const dimText = `${dims.length}" × ${dims.width}" × ${dims.height}"`;
+
+    if (channel === 'WhatsApp') {
+
+        const message = `
+🌸 *New Custom Pearl Order*
+
+👤 Name: ${formData.customerName}
+📞 Phone: ${formData.phone}
+
+👜 Category: ${category}
+🎒 Bag Type: ${formData.bagType}
+📏 Size: ${formData.size}
+📐 Dimensions: ${dimText}
+🎨 Colour: ${formData.color || "Not specified"}
+
+📝 Description:
+${formData.orderDescription || "No description"}
+
+🔖 Tracking ID:
+${trackingId}
+`;
+
+        window.open(
+            `https://wa.me/923094677278?text=${encodeURIComponent(message)}`,
+            "_blank"
+        );
+
+    } else if (channel === 'Instagram') {
+
+        const instaMessage = `
+🌸 New Custom Pearl Order
+
+👤 Name: ${formData.customerName}
+📞 Phone: ${formData.phone}
+
+👜 Category: ${category}
+🎒 Bag Type: ${formData.bagType}
+📏 Size: ${formData.size}
+📐 Dimensions: ${dimText}
+🎨 Colour: ${formData.color || "Not specified"}
+
+📝 Description:
+${formData.orderDescription || "No description"}
+
+🔖 Tracking ID:
+${trackingId}
+`;
+
+        navigator.clipboard.writeText(instaMessage);
+
+        window.open("https://www.instagram.com/custompearl/", "_blank");
+
+        alert("Message copied successfully. Paste it into Instagram DM.");
+    }
+
+}, 800);
 
     } catch (err) {
       console.error('Custom order error:', err);

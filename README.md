@@ -14,20 +14,6 @@ https://custom-pearl-backend.onrender.com
 
 ---
 
-# 📸 Preview
-
-(Add screenshots here)
-
-| Home | Products |
-|------|----------|
-| Screenshot | Screenshot |
-
-| Custom Order | Admin Dashboard |
-|--------------|----------------|
-| Screenshot | Screenshot |
-
----
-
 # 🚀 Features
 
 ## 🛍 Customer Features

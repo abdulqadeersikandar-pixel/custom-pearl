@@ -1,5 +1,5 @@
 import React from 'react';
-
+import { API_URL } from "../config";
 const reviews = [
   { id:1, name:'Ayesha K.',   text:'The quality of my pearl bag is absolutely amazing. The custom design was exactly what I had in mind.', rating:5 },
   { id:2, name:'Fatima R.',   text:'The neatness of the work is top-notch. Highly recommend for anyone wanting a custom crochet bag.',    rating:5 },

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useOrder } from "../context/OrderContext";
 import { useLocation, Link } from "react-router-dom";
-
+import { API_URL } from "../config";
 const STATUS_COLORS = {
   'Pending':           { bg: '#fff8e1', color: '#f57f17', border: '#ffe082' },
   'Pending Quotation': { bg: '#fff3e0', color: '#e65100', border: '#ffcc02' },

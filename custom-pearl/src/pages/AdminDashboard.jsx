@@ -4,7 +4,7 @@ import { auth } from '../firebase';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import WhatsAppStatusCard from '../components/WhatsAppStatusCard';
-
+import { API_URL } from "../config";
 const INACTIVITY_MS = 2 * 60 * 1000;
 const TABS = ['All Orders', 'Manage Products', 'Settings', 'WhatsApp Bot'];
 
@@ -81,10 +81,10 @@ const AdminDashboard = () => {
     try {
       const headers = await getAuthHeaders(); // 🟢 NAYA: Token get kia
       const [c, ch, p, pay] = await Promise.all([
-        axios.get('http://localhost:5000/api/custom-orders', { headers }),
-        axios.get('http://localhost:5000/api/checkout-orders', { headers }),
-        axios.get('http://localhost:5000/api/products'), // Products are public
-        axios.get('http://localhost:5000/api/payment-settings'), // PaySettings public
+        axios.get('https://custom-pearl-backend.onrender.com/api/custom-orders', { headers }),
+        axios.get('https://custom-pearl-backend.onrender.com/api/checkout-orders', { headers }),
+        axios.get('https://custom-pearl-backend.onrender.com/api/products'), // Products are public
+        axios.get('https://custom-pearl-backend.onrender.com/api/payment-settings'), // PaySettings public
       ]);
       setCustomOrders(c.data);
       setCheckoutOrders(ch.data);
@@ -121,8 +121,8 @@ const AdminDashboard = () => {
     try {
       const headers = await getAuthHeaders(); // 🟢 NAYA
       const endpoint = type === 'Custom'
-        ? `http://localhost:5000/api/custom-orders/${id}/status`
-        : `http://localhost:5000/api/checkout-orders/${id}/status`;
+        ? `https://custom-pearl-backend.onrender.com/api/custom-orders/${id}/status`
+        : `https://custom-pearl-backend.onrender.com/api/checkout-orders/${id}/status`;
 
       await axios.put(endpoint, { status: newStatus }, { headers });
       fetchAll(); 
@@ -189,8 +189,8 @@ const AdminDashboard = () => {
     try {
       const headers = await getAuthHeaders(); // 🟢 NAYA
       const reqHeaders = { ...headers, 'Content-Type': 'multipart/form-data' };
-      if (editId) await axios.put(`http://localhost:5000/api/products/${editId}`,fd,{headers:reqHeaders});
-      else        await axios.post('http://localhost:5000/api/products',fd,{headers:reqHeaders});
+      if (editId) await axios.put(`https://custom-pearl-backend.onrender.com/api/products/${editId}`,fd,{headers:reqHeaders});
+      else        await axios.post('https://custom-pearl-backend.onrender.com/api/products',fd,{headers:reqHeaders});
       resetForm(); fetchAll();
     } catch { alert('Failed to save product.'); }
     finally { setPSaving(false); }
@@ -199,12 +199,12 @@ const AdminDashboard = () => {
   const handleDelete = async id => {
     if (!window.confirm('Delete this product?')) return;
     const headers = await getAuthHeaders(); // 🟢 NAYA
-    await axios.delete(`http://localhost:5000/api/products/${id}`, { headers });
+    await axios.delete(`https://custom-pearl-backend.onrender.com/api/products/${id}`, { headers });
     fetchAll();
   };
 
   const startEdit = p => { setEditId(p.Id);setPName(p.Name);setPPrice(p.Price);setPDesc(p.Description||'');setPCat(p.Category||'Pearls');setShowForm(true); };
-  const getImg = p => { if (p.Images?.length>0) { const i=p.Images[0]; return i.startsWith('http')?i:`http://localhost:5000${i}`; } return null; };
+  const getImg = p => { if (p.Images?.length>0) { const i=p.Images[0]; return i.startsWith('http')?i:`https://custom-pearl-backend.onrender.com${i}`; } return null; };
 
   const handleChangePassword = async e => {
     e.preventDefault(); setPwBanner({ type:'', msg:'' });
@@ -226,7 +226,7 @@ const AdminDashboard = () => {
     setPayBanner({ type:'', msg:'' });
     try {
       const headers = await getAuthHeaders(); // 🟢 NAYA
-      await axios.put(`http://localhost:5000/api/payment-settings/${key}`, payEdits[key], { headers });
+      await axios.put(`https://custom-pearl-backend.onrender.com/api/payment-settings/${key}`, payEdits[key], { headers });
       setPayBanner({ type:'success', msg:`${key} settings saved!` });
       setTimeout(() => setPayBanner({ type:'', msg:'' }), 3000);
     } catch { setPayBanner({ type:'error', msg:'Failed to save. Try again.' }); }
@@ -362,7 +362,7 @@ const AdminDashboard = () => {
                         {order.InspirationImage && (
                           <div className="col-span-2 sm:col-span-4">
                             <p className="text-xs text-gray-400 mb-1">Inspiration Image</p>
-                            <img src={order.InspirationImage.startsWith('http')?order.InspirationImage:`http://localhost:5000${order.InspirationImage}`}
+                            <img src={order.InspirationImage.startsWith('http')?order.InspirationImage:`https://custom-pearl-backend.onrender.com${order.InspirationImage}`}
                               alt="Inspiration" className="h-24 w-24 object-cover rounded-lg border border-gray-200 dark:border-gray-600" />
                           </div>
                         )}

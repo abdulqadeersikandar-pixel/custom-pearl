@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-
+import { API_URL } from "../config";
 const faqData = [
   { q:'How long does a custom order take?',       a:'Typically 5–10 working days depending on the complexity of your design.' },
   { q:'Do you deliver all across Pakistan?',       a:'Yes! We offer free delivery to all cities and towns across Pakistan.' },

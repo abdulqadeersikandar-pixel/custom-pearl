@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { API_URL } from "../config";
+import React, 
+{ useState, useEffect } from 'react';
 import axios from 'axios';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
@@ -147,7 +149,7 @@ const CustomBagForm = () => {
     if (image) data.append('image', image);
 
     try {
-      const res = await axios.post('http://localhost:5000/api/custom-orders', data, {
+      const res = await axios.post('https://custom-pearl-backend.onrender.com/api/custom-orders', data, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 

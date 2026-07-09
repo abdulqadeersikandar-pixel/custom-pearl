@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-
+import { API_URL } from "../config";
 const WhatsAppStatusCard = () => {
   const [statusData, setStatusData] = useState({ status: 'INITIALIZING', qrCodeUrl: '' });
 
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/whatsapp-status');
+        const response = await axios.get('https://custom-pearl-backend.onrender.com/api/whatsapp-status');
         setStatusData(response.data);
       } catch (error) {
         console.error("WhatsApp status fetch error:", error);

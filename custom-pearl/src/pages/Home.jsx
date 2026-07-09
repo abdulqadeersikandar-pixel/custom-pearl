@@ -1,4 +1,6 @@
-import React from 'react';
+import { API_URL } from "../config";
+import React from 
+'react';
 import ProductList  from '../components/ProductList';
 import CustomBagForm from '../components/CustomBagForm';
 import Features    from '../components/Features';

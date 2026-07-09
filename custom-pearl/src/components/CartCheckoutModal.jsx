@@ -1,7 +1,7 @@
 // components/CartCheckoutModal.jsx
 // Regular items  → COD / Bank Transfer / Online Payment (3 options)
 // Custom items   → WhatsApp / Instagram only (2 options)
-
+import { API_URL } from "../config";
 import { useState } from "react";
 
 const WHATSAPP_NUMBER = "923094677278";

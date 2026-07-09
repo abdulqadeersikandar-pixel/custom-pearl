@@ -1,6 +1,6 @@
 // components/CustomOrderConfirmModal.jsx
 import { useState } from "react";
-
+import { API_URL } from "../config";
 const WHATSAPP_NUMBER = "923094677278"; // international format
 
 export default function CustomOrderConfirmModal({ orderData, onClose, onConfirm }) {

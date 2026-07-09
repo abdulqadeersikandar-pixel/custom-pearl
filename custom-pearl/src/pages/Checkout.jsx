@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useCart } from '../context/CartContext';
 import { Link, useNavigate } from 'react-router-dom';
-
+import { API_URL } from "../config";
 // ── Banner ─────────────────────────────────────────────────────────────────────
 const Banner = ({ type, msg, onClose }) => {
   if (!msg) return null;
@@ -45,7 +45,7 @@ const Checkout = () => {
   const [orderDone, setOrderDone]         = useState(null);
 
   useEffect(() => {
-    axios.get('http://localhost:5000/api/payment-settings')
+    axios.get('https://custom-pearl-backend.onrender.com/api/payment-settings')
       .then(res => {
         const online = res.data
           .filter(p => p.IsActive)
@@ -89,7 +89,7 @@ const Checkout = () => {
     setLoading(true);
     setBanner({ type:'info', msg:'Placing your order, please wait…' });
     try {
-      const res = await axios.post('http://localhost:5000/api/checkout-orders', {
+      const res = await axios.post('https://custom-pearl-backend.onrender.com/api/checkout-orders', {
         customerName:    formData.customerName,
         customerPhone:   formData.customerPhone,
         customerEmail:   formData.customerEmail.toLowerCase(), // Sent to backend

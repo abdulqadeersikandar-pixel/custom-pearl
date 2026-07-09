@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-
+import { API_URL } from "../config";
 const CartContext = createContext();
 export const useCart = () => useContext(CartContext);
 

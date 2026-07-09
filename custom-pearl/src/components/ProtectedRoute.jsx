@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
 import { auth } from '../firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-
+import { API_URL } from "../config";
 const INACTIVITY_MS = 2 * 60 * 1000;
 
 const ProtectedRoute = ({ children }) => {

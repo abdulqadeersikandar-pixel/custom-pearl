@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
-
+import { API_URL } from "../config";
 const Navbar = () => {
   const { getCartCount }      = useCart();
   const { isDark, toggleTheme } = useTheme();

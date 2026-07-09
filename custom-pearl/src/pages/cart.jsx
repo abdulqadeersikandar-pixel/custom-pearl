@@ -1,7 +1,7 @@
 import React from 'react';
 import { useCart } from '../context/CartContext';
 import { Link, useNavigate } from 'react-router-dom';
-
+import { API_URL } from "../config";
 const Cart = () => {
   const { cartItems, removeFromCart, updateQty, getCartTotal } = useCart();
   const navigate = useNavigate();
@@ -11,7 +11,7 @@ const Cart = () => {
       if (item.isCustom && item.Images?.[0]?.startsWith('data:')) return item.Images[0];
       if (item.Images?.length > 0) {
         const img = item.Images[0];
-        return img.startsWith('http') ? img : `http://localhost:5000${img}`;
+        return img.startsWith('http') ? img : `https://custom-pearl-backend.onrender.com${img}`;
       }
     } catch {}
     return null;

@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext } from 'react';
 import axios from 'axios';
-
+import { API_URL } from "../config";
 const OrderContext = createContext();
 
 export const OrderProvider = ({ children }) => {
@@ -9,7 +9,7 @@ export const OrderProvider = ({ children }) => {
     const [error, setError] = useState(null);
     
     // Base URL for API
-    const API_URL = 'http://localhost:5000/api';
+    const API_URL = 'https://custom-pearl-backend.onrender.com';
 
     const fetchMyOrders = async (phone) => {
         if (!phone) return;

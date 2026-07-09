@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from 'axios';
 import { Link } from "react-router-dom";
-
+import { API_URL } from "../config";
 const STATUS_COLORS = {
   'Pending':           { bg: '#fff8e1', color: '#f57f17', border: '#ffe082' },
   'Pending Quotation': { bg: '#fff3e0', color: '#e65100', border: '#ffcc02' },
@@ -54,7 +54,7 @@ export default function MyOrders() {
 
     try {
       // 🟢 NAYA: Secure POST request to our new backend route
-      const res = await axios.post('http://localhost:5000/api/my-orders/search', {
+      const res = await axios.post('https://custom-pearl-backend.onrender.com/api/my-orders/search', {
         phone: cleanedPhone,
         email: cleanedEmail
       });

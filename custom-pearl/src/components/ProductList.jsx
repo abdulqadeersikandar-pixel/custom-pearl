@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useCart } from '../context/CartContext';
-
+import { API_URL } from "../config";
 const CATEGORIES = ['All', 'Pearls', 'Crochet'];
 
 const ProductList = () => {
@@ -14,7 +14,7 @@ const ProductList = () => {
   const { addToCart }                   = useCart();
 
   useEffect(() => {
-    axios.get('http://localhost:5000/api/products')
+    axios.get('https://custom-pearl-backend.onrender.com/api/products')
       .then(res => { setProducts(res.data); setFiltered(res.data); })
       .catch(err => console.error('Fetch products:', err));
   }, []);
@@ -34,7 +34,7 @@ const ProductList = () => {
     try {
       if (p.Images?.length > 0) {
         const img = p.Images[0];
-        return img.startsWith('http') ? img : `http://localhost:5000${img}`;
+        return img.startsWith('http') ? img : `https://custom-pearl-backend.onrender.com${img}`;
       }
     } catch {}
     return 'https://placehold.co/300x280/fdf2f8/9d174d?text=Custom+Pearl';

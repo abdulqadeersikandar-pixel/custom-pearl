@@ -1,6 +1,6 @@
 import React from 'react';
 import ProductList from '../components/ProductList';
-
+import { API_URL } from "../config";
 const Shop = () => (
   <div className="min-h-screen bg-pink-50 dark:bg-gray-900 transition-colors">
     <div className="py-8 px-4 text-center">

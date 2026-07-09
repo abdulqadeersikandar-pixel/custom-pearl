@@ -47,9 +47,15 @@ const FieldError = ({ msg }) =>
 // ── Main Component ─────────────────────────────────────────────────────────────
 const CustomBagForm = () => {
   const [category, setCategory]         = useState('');
-  const [formData, setFormData]         = useState({
-    customerName: '', phone: '', bagType: '', size: 'Medium', color: '', orderDescription: '',
-  });
+  const [formData, setFormData] = useState({
+  customerName: '',
+  phone: '',
+  email: '',
+  bagType: '',
+  size: 'Medium',
+  color: '',
+  orderDescription: '',
+});
   const [image, setImage]               = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [banner, setBanner]             = useState({ type: '', msg: '' });
@@ -91,6 +97,8 @@ const CustomBagForm = () => {
   // ── Validation ───────────────────────────────────────────────────────────────
   const validate = () => {
     const errors = {};
+    if (!formData.email.trim())
+    errors.email = "Email is required.";
     if (!category)                               errors.category     = 'Please select Pearls or Crochet.';
     if (!formData.customerName.trim())           errors.customerName = 'Full name is required.';
     if (!/^03\d{9}$/.test(formData.phone))       errors.phone        = 'Enter a valid 11-digit number starting with 03.';
@@ -139,6 +147,7 @@ const CustomBagForm = () => {
     const data = new FormData();
     data.append('customerName',     formData.customerName);
     data.append('phone',            formData.phone);
+    data.append('email', formData.email);
     data.append('bagType',          formData.bagType);
     data.append('size',             formData.size);
     data.append('color',            formData.color);
@@ -348,6 +357,20 @@ ${trackingId}
               />
               <FieldError msg={fieldErrors.phone} />
             </div>
+<div>
+  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+    Email Address
+  </label>
+
+  <input
+    type="email"
+    name="email"
+    value={formData.email}
+    onChange={handleChange}
+    placeholder="example@gmail.com"
+    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
+  />
+</div>
 
             {/* Bag Type */}
             <div>

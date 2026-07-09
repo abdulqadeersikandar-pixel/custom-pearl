@@ -1,5 +1,6 @@
 const { v2: cloudinary } = require('cloudinary');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const { sendOrderEmail } = require("./services/emailService");
 const express = require('express');
 const cors    = require('cors');
 const multer  = require('multer');
@@ -108,24 +109,63 @@ app.delete('/api/products/:id', verifyAdmin, async (req, res) => {
 });
 
 app.post('/api/custom-orders', upload.single('image'), async (req, res) => { 
+  try {
+    const { customerName, phone, customerPhone, email, customerEmail, bagType, color, pearlColor, size, bagSize, dimensions, orderDescription, orderChannel, selectedCategory } = req.body;
+
+    const resolvedPhone = (phone || customerPhone || '').trim();
+    const resolvedEmail = (email || customerEmail || '').trim();
+    const imageUrl = req.file ? req.file.path : '';
+    const trackingId = generateTrackingId('CPO');
+
+    await db.collection('CustomOrders').add({
+        CustomerName: customerName || '',
+        CustomerPhone: resolvedPhone,
+        CustomerEmail: resolvedEmail,
+        InspirationImage: imageUrl,
+        BagType: bagType || '',
+        PearlColor: (color || pearlColor || '').trim(),
+        BagSize: (size || bagSize || '').trim(),
+        Dimensions: (dimensions || '').trim(),
+        EstimatedPrice: 0,
+        OrderDescription: orderDescription || '',
+        OrderChannel: orderChannel || 'Website',
+        TrackingId: trackingId,
+        SelectedCategory: selectedCategory || '',
+        WhatsAppNotified: 1,
+        OrderStatus: 'Pending',
+        OrderDate: new Date().toISOString()
+    });
+
+    // ✅ Send Email
     try {
-        const { customerName, phone, customerPhone, email, customerEmail, bagType, color, pearlColor, size, bagSize, dimensions, orderDescription, orderChannel, selectedCategory } = req.body;
-        const resolvedPhone = (phone || customerPhone || '').trim();
-        const resolvedEmail = (email || customerEmail || '').trim(); 
-        const imageUrl      = req.file ? req.file.path : '';
-        const trackingId    = generateTrackingId('CPO');
-
-        await db.collection('CustomOrders').add({
-            CustomerName: customerName || '', CustomerPhone: resolvedPhone, CustomerEmail: resolvedEmail, 
-            InspirationImage: imageUrl, BagType: bagType || '', PearlColor: (color || pearlColor || '').trim(),
-            BagSize: (size || bagSize || '').trim(), Dimensions: (dimensions || '').trim(), EstimatedPrice: 0,
-            OrderDescription: orderDescription || '', OrderChannel: orderChannel || 'Website', TrackingId: trackingId,
-            SelectedCategory: selectedCategory || '', WhatsAppNotified: 1, OrderStatus: 'Pending', OrderDate: new Date().toISOString()
+        await sendOrderEmail({
+            customerEmail: resolvedEmail,
+            customerName,
+            trackingId,
+            bagType,
+            bagSize: size,
+            pearlColor: color,
+            orderStatus: "Pending"
         });
+    } catch (err) {
+        console.log("Email Error:", err.message);
+    }
 
-        try { await sendWhatsAppNotification(customerName, resolvedPhone, `Custom-${trackingId}`, trackingId); } catch(e){}
-        res.status(201).json({ success: true, message: 'Custom order placed!', trackingId, imageUrl });
-    } catch (err) { res.status(500).json({ message: 'Server error' }); }
+    // WhatsApp
+    try {
+        await sendWhatsAppNotification(customerName, resolvedPhone, `Custom-${trackingId}`, trackingId);
+    } catch (e) {}
+
+    res.status(201).json({
+        success: true,
+        message: 'Custom order placed!',
+        trackingId,
+        imageUrl
+    });
+
+} catch (err) {
+    res.status(500).json({ message: 'Server error' });
+}
 });
 
 app.get('/api/custom-orders', verifyAdmin, async (req, res) => { 
@@ -144,21 +184,69 @@ app.put('/api/custom-orders/:id/status', verifyAdmin, async (req, res) => {
     } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-app.post('/api/checkout-orders', async (req, res) => { 
+app.post('/api/checkout-orders', async (req, res) => {
     try {
-        const { customerName, customerPhone, customerEmail, shippingAddress, totalAmount, cartItems, orderChannel, paymentMethod, transactionId } = req.body;
+        const {
+            customerName,
+            customerPhone,
+            customerEmail,
+            shippingAddress,
+            totalAmount,
+            cartItems,
+            orderChannel,
+            paymentMethod,
+            transactionId
+        } = req.body;
+
         const trackingId = generateTrackingId('PRL');
 
         await db.collection('CheckoutOrders').add({
-            CustomerName: customerName || '', CustomerPhone: customerPhone || '', CustomerEmail: customerEmail || '',
-            ShippingAddress: shippingAddress || '', TotalAmount: Number(totalAmount) || 0, CartItems: JSON.stringify(cartItems || []),
-            OrderChannel: orderChannel || 'Website', PaymentMethod: paymentMethod || 'cod', TransactionId: transactionId || '',
-            TrackingId: trackingId, WhatsAppNotified: 1, OrderStatus: 'Pending', OrderDate: new Date().toISOString()
+            CustomerName: customerName || '',
+            CustomerPhone: customerPhone || '',
+            CustomerEmail: customerEmail || '',
+            ShippingAddress: shippingAddress || '',
+            TotalAmount: Number(totalAmount) || 0,
+            CartItems: JSON.stringify(cartItems || []),
+            OrderChannel: orderChannel || 'Website',
+            PaymentMethod: paymentMethod || 'cod',
+            TransactionId: transactionId || '',
+            TrackingId: trackingId,
+            WhatsAppNotified: 1,
+            OrderStatus: 'Pending',
+            OrderDate: new Date().toISOString()
         });
 
-        try { await sendWhatsAppNotification(customerName, customerPhone, `Web-${trackingId}`, trackingId); } catch(e){}
-        res.status(201).json({ success: true, message: 'Order confirmed!', trackingId });
-    } catch (err) { res.status(500).json({ message: 'Server error' }); }
+        // Send Email
+        try {
+            await sendOrderEmail({
+                customerEmail,
+                customerName,
+                trackingId,
+                orderStatus: "Pending"
+            });
+        } catch (e) {
+            console.log("Email Error:", e.message);
+        }
+
+        // WhatsApp
+        try {
+            await sendWhatsAppNotification(
+                customerName,
+                customerPhone,
+                `Web-${trackingId}`,
+                trackingId
+            );
+        } catch (e) {}
+
+        res.status(201).json({
+            success: true,
+            message: 'Order confirmed!',
+            trackingId
+        });
+
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
 });
 
 app.get('/api/checkout-orders', verifyAdmin, async (req, res) => { 

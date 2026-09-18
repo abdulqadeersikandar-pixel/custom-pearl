@@ -10,10 +10,10 @@ const ChatBot = () => {
   const [isTyping, setIsTyping] = useState(false);
   const chatEndRef = useRef(null);
 
-  // Aapka WhatsApp Number (Country code ke sath)
+  // WhatsApp Number (Country code ke sath)
   const WHATSAPP_NUMBER = "923094677278"; 
 
-  // Combined aur Updated FAQs
+  //  FAQs
   const faqs = {
     'delivery': 'Humara standard delivery time 3 se 5 working days hai.',
     'time': 'Bags deliver hone mein aam tor par 3 se 5 din lagte hain.',

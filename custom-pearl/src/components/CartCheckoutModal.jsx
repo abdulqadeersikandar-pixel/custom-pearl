@@ -1,13 +1,10 @@
-// components/CartCheckoutModal.jsx
-// Regular items  → COD / Bank Transfer / Online Payment (3 options)
-// Custom items   → WhatsApp / Instagram only (2 options)
 import { API_URL } from "../config";
 import { useState } from "react";
 
 const WHATSAPP_NUMBER = "923094677278";
 
 export default function CartCheckoutModal({ cartItems, onClose, onSuccess }) {
-  const [step, setStep] = useState('form');       // 'form' | 'payment' | 'success'
+  const [step, setStep] = useState('form');       
   const [loading, setLoading] = useState(false);
   const [trackingInfo, setTrackingInfo] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('cod');
@@ -79,7 +76,7 @@ export default function CartCheckoutModal({ cartItems, onClose, onSuccess }) {
       `📍 Address: ${form.ShippingAddress}\n\n` +
       `🛍️ Items:\n${itemList}\n\n` +
       `💰 Total: Rs. ${totalAmount.toLocaleString()}\n\n` +
-      `Kindly confirm karein. Shukriya! 🙏`
+      `Kindly confirm karein. Shukriya! `
     );
   };
 
@@ -178,7 +175,7 @@ export default function CartCheckoutModal({ cartItems, onClose, onSuccess }) {
             </Field>
 
             <button onClick={handleFormNext} style={styles.primaryBtn}>
-              Aage Jao →
+              Next →
             </button>
           </div>
         )}

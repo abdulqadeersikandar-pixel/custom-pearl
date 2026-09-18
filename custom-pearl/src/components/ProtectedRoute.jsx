@@ -36,7 +36,7 @@ const ProtectedRoute = ({ children }) => {
   if (user === undefined) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900">
-        <p className="text-pink-600 font-bold text-xl">Checking authorisation…</p>
+        <p className="text-pink-600 font-bold text-xl">Checking authorization…</p>
       </div>
     );
   }

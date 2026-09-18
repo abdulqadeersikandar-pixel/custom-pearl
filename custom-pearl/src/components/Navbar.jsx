@@ -9,7 +9,6 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const cartCount               = getCartCount();
 
-  // Yahan My Orders add kiya hai aur Track Order ka path theek kiya hai
   const links = [
     { to: '/',            label: 'Home'        },
     { to: '/shop',        label: 'Shop'        },

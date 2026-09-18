@@ -5,8 +5,9 @@ import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, signOu
 import { useNavigate } from 'react-router-dom';
 import WhatsAppStatusCard from '../components/WhatsAppStatusCard';
 import { API_URL } from "../config";
+
 const INACTIVITY_MS = 2 * 60 * 1000;
-const TABS = ['All Orders', 'Manage Products', 'Settings', 'WhatsApp Bot'];
+const TABS = ['All Orders', 'Manage Products', 'Manage Categories', 'Settings', 'WhatsApp Bot'];
 
 const Banner = ({ type, msg }) => {
   if (!msg) return null;
@@ -18,7 +19,6 @@ const Banner = ({ type, msg }) => {
   return <div className={`border rounded-lg px-4 py-3 text-sm font-medium mb-4 ${s[type]||s.info}`}>{msg}</div>;
 };
 
-// 🟢 NAYA: API Token Helper Function 
 const getAuthHeaders = async () => {
   if (auth.currentUser) {
     const token = await auth.currentUser.getIdToken();
@@ -50,6 +50,7 @@ const AdminDashboard = () => {
   const [customOrders, setCustomOrders]     = useState([]);
   const [checkoutOrders, setCheckoutOrders] = useState([]);
   const [products, setProducts]             = useState([]);
+  const [categories, setCategories]         = useState([]);
   const [paySettings, setPaySettings]       = useState([]);
   const [loading, setLoading]               = useState(true);
 
@@ -65,6 +66,8 @@ const AdminDashboard = () => {
   const [pImg,   setPImg]      = useState(null);
   const [pSaving,setPSaving]   = useState(false);
 
+  const [newCatName, setNewCatName] = useState('');
+
   const [oldPw,  setOldPw]    = useState('');
   const [newPw,  setNewPw]    = useState('');
   const [confPw, setConfPw]   = useState('');
@@ -79,17 +82,21 @@ const AdminDashboard = () => {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const headers = await getAuthHeaders(); // 🟢 NAYA: Token get kia
-      const [c, ch, p, pay] = await Promise.all([
+      const headers = await getAuthHeaders();
+      const [c, ch, p, pay, cat] = await Promise.all([
         axios.get('https://custom-pearl-backend.onrender.com/api/custom-orders', { headers }),
         axios.get('https://custom-pearl-backend.onrender.com/api/checkout-orders', { headers }),
-        axios.get('https://custom-pearl-backend.onrender.com/api/products'), // Products are public
-        axios.get('https://custom-pearl-backend.onrender.com/api/payment-settings'), // PaySettings public
+        axios.get('https://custom-pearl-backend.onrender.com/api/products'),
+        axios.get('https://custom-pearl-backend.onrender.com/api/payment-settings'),
+        axios.get('https://custom-pearl-backend.onrender.com/api/categories')
       ]);
       setCustomOrders(c.data);
       setCheckoutOrders(ch.data);
       setProducts(p.data);
       setPaySettings(pay.data);
+      setCategories(cat.data);
+      if(cat.data.length > 0 && !editId) setPCat(cat.data[0].name);
+
       const edits = {};
       pay.data.forEach(pm => {
         edits[pm.MethodKey] = {
@@ -105,13 +112,11 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    // Wait for auth to be ready
     const unsubscribe = auth.onAuthStateChanged(user => {
       if (user) { fetchAll(); }
     });
     const saved = localStorage.getItem('cpBizInfo');
     if (saved) setBizInfo(JSON.parse(saved));
-    
     return () => unsubscribe();
   }, []);
 
@@ -119,17 +124,13 @@ const AdminDashboard = () => {
 
   const handleStatusChange = async (id, type, newStatus) => {
     try {
-      const headers = await getAuthHeaders(); // 🟢 NAYA
+      const headers = await getAuthHeaders();
       const endpoint = type === 'Custom'
         ? `https://custom-pearl-backend.onrender.com/api/custom-orders/${id}/status`
         : `https://custom-pearl-backend.onrender.com/api/checkout-orders/${id}/status`;
-
       await axios.put(endpoint, { status: newStatus }, { headers });
       fetchAll(); 
-    } catch (err) {
-      console.error("Failed to update status", err);
-      alert("Failed to update order status.");
-    }
+    } catch (err) { alert("Failed to update order status."); }
   };
 
   const getStatusOptions = (type) => {
@@ -177,7 +178,7 @@ const AdminDashboard = () => {
     document.body.removeChild(link);
   };
 
-  const resetForm = () => { setPName('');setPPrice('');setPDesc('');setPCat('Pearls');setPImg(null);setEditId(null);setShowForm(false); };
+  const resetForm = () => { setPName('');setPPrice('');setPDesc('');setPCat(categories.length > 0 ? categories[0].name : 'Pearls');setPImg(null);setEditId(null);setShowForm(false); };
 
   const handleProductSave = async (e) => {
     e.preventDefault();
@@ -187,7 +188,7 @@ const AdminDashboard = () => {
     fd.append('name',pName); fd.append('price',pPrice); fd.append('description',pDesc); fd.append('category',pCat);
     if (pImg) fd.append('image',pImg);
     try {
-      const headers = await getAuthHeaders(); // 🟢 NAYA
+      const headers = await getAuthHeaders();
       const reqHeaders = { ...headers, 'Content-Type': 'multipart/form-data' };
       if (editId) await axios.put(`https://custom-pearl-backend.onrender.com/api/products/${editId}`,fd,{headers:reqHeaders});
       else        await axios.post('https://custom-pearl-backend.onrender.com/api/products',fd,{headers:reqHeaders});
@@ -198,13 +199,33 @@ const AdminDashboard = () => {
 
   const handleDelete = async id => {
     if (!window.confirm('Delete this product?')) return;
-    const headers = await getAuthHeaders(); // 🟢 NAYA
+    const headers = await getAuthHeaders();
     await axios.delete(`https://custom-pearl-backend.onrender.com/api/products/${id}`, { headers });
     fetchAll();
   };
 
-  const startEdit = p => { setEditId(p.Id);setPName(p.Name);setPPrice(p.Price);setPDesc(p.Description||'');setPCat(p.Category||'Pearls');setShowForm(true); };
+  const startEdit = p => { setEditId(p.Id);setPName(p.Name);setPPrice(p.Price);setPDesc(p.Description||'');setPCat(p.Category||(categories.length > 0 ? categories[0].name : 'Pearls'));setShowForm(true); };
   const getImg = p => { if (p.Images?.length>0) { const i=p.Images[0]; return i.startsWith('http')?i:`https://custom-pearl-backend.onrender.com${i}`; } return null; };
+
+  const handleAddCategory = async (e) => {
+    e.preventDefault();
+    if(!newCatName.trim()) return;
+    try {
+      const headers = await getAuthHeaders();
+      await axios.post('https://custom-pearl-backend.onrender.com/api/categories', { name: newCatName }, { headers });
+      setNewCatName('');
+      fetchAll();
+    } catch(err) { alert('Failed to add category'); }
+  };
+
+  const handleDeleteCategory = async (id) => {
+    if(!window.confirm('Delete this category?')) return;
+    try {
+      const headers = await getAuthHeaders();
+      await axios.delete(`https://custom-pearl-backend.onrender.com/api/categories/${id}`, { headers });
+      fetchAll();
+    } catch(err) { alert('Failed to delete category'); }
+  };
 
   const handleChangePassword = async e => {
     e.preventDefault(); setPwBanner({ type:'', msg:'' });
@@ -225,7 +246,7 @@ const AdminDashboard = () => {
   const savePayMethod = async key => {
     setPayBanner({ type:'', msg:'' });
     try {
-      const headers = await getAuthHeaders(); // 🟢 NAYA
+      const headers = await getAuthHeaders();
       await axios.put(`https://custom-pearl-backend.onrender.com/api/payment-settings/${key}`, payEdits[key], { headers });
       setPayBanner({ type:'success', msg:`${key} settings saved!` });
       setTimeout(() => setPayBanner({ type:'', msg:'' }), 3000);
@@ -389,7 +410,10 @@ const AdminDashboard = () => {
                             <div className="space-y-1">
                               {order.CartItems.map((item,i) => (
                                 <div key={i} className="flex justify-between text-sm bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-1.5">
-                                  <span className="text-gray-700 dark:text-gray-200">{item.Name} × {item.qty}</span>
+                                  <span className="text-gray-700 dark:text-gray-200">
+                                    {item.Name} × {item.qty} 
+                                    {item.selectedColor && <span className="ml-2 text-xs font-bold text-pink-500">[{item.selectedColor}]</span>}
+                                  </span>
                                   <span className="font-semibold text-pink-600">{item.Price>0?`Rs. ${(Number(item.Price)*item.qty).toLocaleString()}`:'TBD'}</span>
                                 </div>
                               ))}
@@ -429,7 +453,7 @@ const AdminDashboard = () => {
                         <div className="p-4">
                           <div className="flex justify-between items-start mb-1">
                             <h4 className="font-bold text-gray-800 dark:text-white">{p.Name}</h4>
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${p.Category==='Crochet'?'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400':'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400'}`}>
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400">
                               {p.Category}
                             </span>
                           </div>
@@ -453,8 +477,9 @@ const AdminDashboard = () => {
                   <input type="number" placeholder="Price (Rs.)" value={pPrice} onChange={e=>setPPrice(e.target.value)} required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-400" />
                   <textarea placeholder="Description (optional)" value={pDesc} onChange={e=>setPDesc(e.target.value)} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-400 h-20" />
                   <select value={pCat} onChange={e=>setPCat(e.target.value)} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-400">
-                    <option value="Pearls">Pearls</option>
-                    <option value="Crochet">Crochet</option>
+                    {categories.map(c => (
+                        <option key={c.Id} value={c.name}>{c.name}</option>
+                    ))}
                   </select>
                   <div>
                     <input type="file" accept="image/*" onChange={e=>setPImg(e.target.files[0])} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 text-sm bg-white dark:bg-gray-700 dark:text-white" />
@@ -472,6 +497,34 @@ const AdminDashboard = () => {
           </div>
         )}
 
+        {/* ── NEW MANAGE CATEGORIES TAB ── */}
+        {activeTab==='Manage Categories' && (
+          <div className="space-y-6 max-w-2xl">
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm">
+                <h3 className="font-bold text-gray-800 dark:text-white mb-1">🏷️ Manage Store Categories</h3>
+                <p className="text-xs text-gray-400 mb-5">Add or remove product categories. This will automatically update the shop filters.</p>
+                
+                <form onSubmit={handleAddCategory} className="flex gap-3 mb-6">
+                    <input type="text" placeholder="e.g. Handmade Bags, Wedding Pearls" required
+                           value={newCatName} onChange={e => setNewCatName(e.target.value)}
+                           className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-400" />
+                    <button type="submit" className="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2.5 rounded-lg font-bold text-sm transition">Add Category</button>
+                </form>
+
+                <div className="space-y-2">
+                    {categories.length === 0 ? (
+                        <p className="text-sm text-gray-500">No categories found. Add your first category above.</p>
+                    ) : categories.map(cat => (
+                        <div key={cat.Id} className="flex items-center justify-between border border-gray-200 dark:border-gray-600 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
+                            <span className="font-semibold text-gray-700 dark:text-gray-200">{cat.name}</span>
+                            <button onClick={() => handleDeleteCategory(cat.Id)} className="text-red-500 hover:text-red-700 font-bold text-xs bg-red-50 dark:bg-red-900/20 px-3 py-1 rounded">Delete</button>
+                        </div>
+                    ))}
+                </div>
+            </div>
+          </div>
+        )}
+
         {activeTab==='Settings' && (
           <div className="space-y-6 max-w-2xl">
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm">
@@ -483,9 +536,9 @@ const AdminDashboard = () => {
                   { key:'email',    label:'Email Address',   icon:'📧', ph:'info@custompearl.com'            },
                   { key:'phone',    label:'Contact Phone',   icon:'📞', ph:'03001234567'                     },
                   { key:'whatsapp', label:'WhatsApp Number', icon:'💬', ph:'923001234567 (with country code)' },
-                  { key:'insta',    label:'Instagram Handle', icon:'📸', ph:'custompearl'                     },
-                  { key:'facebook', label:'Facebook Page',    icon:'👤', ph:'custompearl'                     },
-                  { key:'address',  label:'Shop Address',     icon:'📍', ph:'Street, City, Pakistan'          },
+                  { key:'insta',    label:'Instagram Handle', icon:'📸', ph:'custompearl'                    },
+                  { key:'facebook', label:'Facebook Page',    icon:'👤', ph:'custompearl'                    },
+                  { key:'address',  label:'Shop Address',     icon:'📍', ph:'Street, City, Pakistan'         },
                 ].map(f => (
                   <div key={f.key}>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{f.icon} {f.label}</label>

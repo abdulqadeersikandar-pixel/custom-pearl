@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useCart } from '../context/CartContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { API_URL } from "../config";
-// ── Banner ─────────────────────────────────────────────────────────────────────
+
 const Banner = ({ type, msg, onClose }) => {
   if (!msg) return null;
   const s = {
@@ -24,7 +24,6 @@ const Banner = ({ type, msg, onClose }) => {
 const FieldError = ({ msg }) =>
   msg ? <p className="text-red-500 dark:text-red-400 text-xs mt-1 flex items-center gap-1"><span>⚠</span>{msg}</p> : null;
 
-// ── Static COD always shown ────────────────────────────────────────────────────
 const COD = { id:'cod', label:'Cash on Delivery', icon:'💵', desc:'Pay in cash when your order arrives', detail:null };
 const PM_ICONS = { jazzcash:'📱', easypaisa:'💚', bank:'🏦' };
 const PAYMENT_LABELS = { cod:'💵 Cash on Delivery', jazzcash:'📱 JazzCash', easypaisa:'💚 EasyPaisa', bank:'🏦 Bank Transfer' };
@@ -38,6 +37,9 @@ const Checkout = () => {
   const [formData, setFormData] = useState({
     customerName:'', customerPhone:'', customerEmail:'', shippingAddress:'', orderChannel:'Website', paymentMethod:'',
   });
+  
+  // Naya Color Logic
+  const [itemColors, setItemColors] = useState({});
   const [transactionId, setTransactionId] = useState('');
   const [fieldErrors, setFieldErrors]     = useState({});
   const [banner, setBanner]               = useState({ type:'', msg:'' });
@@ -51,7 +53,7 @@ const Checkout = () => {
           .filter(p => p.IsActive)
           .map(p => ({
             id:     p.MethodKey,
-            label:  p.AccountTitle, // using AccountTitle as label for simplicity if MethodLabel doesn't exist
+            label:  p.AccountTitle, 
             icon:   PM_ICONS[p.MethodKey] || '💳',
             desc:   `Pay via ${p.MethodKey}`,
             detail: { accountTitle:p.AccountTitle, accountNumber:p.AccountNumber, bankName:p.BankName },
@@ -73,6 +75,12 @@ const Checkout = () => {
     if (!formData.customerEmail.trim() || !/\S+@\S+\.\S+/.test(formData.customerEmail)) errors.customerEmail = 'Valid email is required.';
     if (!formData.shippingAddress.trim())            errors.shippingAddress = 'Delivery address is required.';
     
+    const missingColors = cartItems.some((item, idx) => !itemColors[`${item.Id}-${idx}`]?.trim());
+    if (missingColors) {
+        setBanner({ type:'error', msg:'Please provide a color choice for all items in your cart.' });
+        return false;
+    }
+
     setFieldErrors(errors);
     if (Object.keys(errors).length) { setBanner({ type:'error', msg:'Please fix the highlighted fields.' }); return false; }
     setBanner({ type:'', msg:'' }); return true;
@@ -89,13 +97,19 @@ const Checkout = () => {
     setLoading(true);
     setBanner({ type:'info', msg:'Placing your order, please wait…' });
     try {
+      // Cart items ke sath select kiye hue colors bhej rahe hain
+      const updatedCartItems = cartItems.map((item, idx) => ({
+          ...item,
+          selectedColor: itemColors[`${item.Id}-${idx}`]
+      }));
+
       const res = await axios.post('https://custom-pearl-backend.onrender.com/api/checkout-orders', {
         customerName:    formData.customerName,
         customerPhone:   formData.customerPhone,
-        customerEmail:   formData.customerEmail.toLowerCase(), // Sent to backend
+        customerEmail:   formData.customerEmail.toLowerCase(), 
         shippingAddress: formData.shippingAddress,
         totalAmount:     getCartTotal(),
-        cartItems,
+        cartItems:       updatedCartItems,
         orderChannel:    channel,
         paymentMethod:   formData.paymentMethod,
         transactionId:   transactionId || null,
@@ -108,7 +122,7 @@ const Checkout = () => {
 
       setTimeout(() => {
         if (channel === 'WhatsApp') {
-          const itemsList = cartItems.map(i => `• ${i.Name} × ${i.qty}${i.Price > 0 ? ` — Rs. ${Number(i.Price)*i.qty}` : ''}`).join('%0A');
+          const itemsList = updatedCartItems.map(i => `• ${i.Name} (Color: ${i.selectedColor}) × ${i.qty}${i.Price > 0 ? ` — Rs. ${Number(i.Price)*i.qty}` : ''}`).join('%0A');
           const msg = `Hi Custom Pearl! Confirming my order.%0A%0AName: ${formData.customerName}%0APhone: ${formData.customerPhone}%0AEmail: ${formData.customerEmail}%0AAddress: ${formData.shippingAddress}%0A%0AItems:%0A${itemsList}%0A%0ATotal: Rs. ${getCartTotal()}%0APayment: ${PAYMENT_LABELS[formData.paymentMethod]||formData.paymentMethod}%0A` + (transactionId ? `TXN ID: ${transactionId}%0A` : '') + `Tracking ID: ${trackingId}`;
           window.open(`https://wa.me/923094677278?text=${msg}`, '_blank');
         } else if (channel === 'Instagram') {
@@ -229,7 +243,23 @@ const Checkout = () => {
                     className={`w-full border rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-400 ${fieldErrors.shippingAddress?'border-red-400':'border-gray-300 dark:border-gray-600'}`} />
                   <FieldError msg={fieldErrors.shippingAddress} />
                 </div>
-                <button onClick={() => { if (validateStep1()) setStep(2); }} className="w-full bg-pink-600 hover:bg-pink-700 text-white py-3 rounded-xl font-bold text-sm transition">Continue to Payment →</button>
+
+                <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <h4 className="font-bold text-gray-800 dark:text-white mb-3">🎨 Item Details & Colors</h4>
+                    {cartItems.map((item, idx) => (
+                        <div key={`${item.Id}-${idx}`} className="mb-3 bg-pink-50 dark:bg-gray-700/30 p-3 rounded-lg border border-pink-100 dark:border-gray-600">
+                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-200 mb-1">
+                                Color preference for <span className="text-pink-600 dark:text-pink-400">{item.Name}</span> <span className="text-pink-500">*</span>
+                            </label>
+                            <input type="text" placeholder="e.g. White, Black, Red, Custom Color" required
+                                value={itemColors[`${item.Id}-${idx}`] || ''} 
+                                onChange={e => setItemColors(prev => ({...prev, [`${item.Id}-${idx}`]: e.target.value}))}
+                                className="w-full border border-gray-300 dark:border-gray-500 rounded-lg p-2 text-sm bg-white dark:bg-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-400" />
+                        </div>
+                    ))}
+                </div>
+
+                <button onClick={() => { if (validateStep1()) setStep(2); }} className="w-full bg-pink-600 hover:bg-pink-700 text-white py-3 rounded-xl font-bold text-sm transition mt-4">Continue to Payment →</button>
               </div>
             ) : (
               <div className="text-sm text-gray-600 dark:text-gray-300 space-y-0.5">
@@ -314,14 +344,14 @@ const Checkout = () => {
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm sticky top-24">
             <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4 border-b border-gray-200 dark:border-gray-700 pb-3">Order Summary</h3>
             <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
-              {cartItems.map(item => (
+              {cartItems.map((item, idx) => (
                 <div key={item.Id} className="flex items-center gap-3 text-sm">
                   <div className="w-10 h-10 rounded-lg bg-pink-50 dark:bg-gray-700 flex-shrink-0 flex items-center justify-center overflow-hidden">
                     <span>{item.isCustom?'✨':'👜'}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-gray-800 dark:text-white truncate">{item.Name}</p>
-                    <p className="text-gray-400 text-xs">× {item.qty}</p>
+                    <p className="text-gray-400 text-xs">× {item.qty} {itemColors[`${item.Id}-${idx}`] && <span className="text-pink-500 ml-1">({itemColors[`${item.Id}-${idx}`]})</span>}</p>
                   </div>
                   <span className="font-semibold text-gray-800 dark:text-white flex-shrink-0">
                     {item.Price > 0 ? `Rs. ${(Number(item.Price)*item.qty).toLocaleString()}` : 'TBD'}

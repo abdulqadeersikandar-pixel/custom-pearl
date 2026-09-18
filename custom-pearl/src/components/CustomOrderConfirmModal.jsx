@@ -20,7 +20,7 @@ export default function CustomOrderConfirmModal({ orderData, onClose, onConfirm 
       (orderData.Dimensions ? `📏 Dimensions: ${orderData.Dimensions}\n` : '') +
       (orderData.SelectedItemName ? `🛍️ Item: ${orderData.SelectedItemName}\n` : '') +
       (orderData.OrderDescription ? `📝 Details: ${orderData.OrderDescription}\n` : '') +
-      `\nKindly quote kar dain price aur availability. Shukriya! 🙏`
+      `\nKindly quote kar dain price aur availability. Shukriya! `
     );
   };
 

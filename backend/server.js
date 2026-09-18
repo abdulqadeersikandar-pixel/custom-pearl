@@ -6,20 +6,20 @@ const cors    = require('cors');
 const multer  = require('multer');
 const path    = require('path');
 require('dotenv').config();
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-const { getAuth } = require('firebase-admin/auth'); // 🟢 LATEST FIREBASE IMPORT
-const db = require('./db'); 
 
+const { getAuth } = require('firebase-admin/auth'); 
+const db = require('./db'); 
 const { sendWhatsAppNotification, getWhatsAppStatus } = require('./services/whatsappService'); 
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-
 
 // ── SECURITY MIDDLEWARE ──────────────────────
 const verifyAdmin = async (req, res, next) => {
@@ -30,7 +30,7 @@ const verifyAdmin = async (req, res, next) => {
     
     const token = authHeader.split('Bearer ')[1];
     try {
-        const decodedToken = await getAuth().verifyIdToken(token); // 🟢 LATEST AUTH
+        const decodedToken = await getAuth().verifyIdToken(token); 
         req.user = decodedToken; 
         next();
     } catch (err) {
@@ -60,6 +60,31 @@ app.get('/api/whatsapp-status', (req, res) => {
     try { res.json(getWhatsAppStatus()); } catch { res.json({status: 'offline'}) }
 });
 
+// ── CATEGORIES API ───────────────────────────
+app.get('/api/categories', async (req, res) => {
+    try {
+        const snapshot = await db.collection('Categories').get();
+        let categories = [];
+        snapshot.forEach(doc => categories.push({ Id: doc.id, ...doc.data() }));
+        res.json(categories);
+    } catch (err) { res.status(500).json({ message: 'Server error' }); }
+});
+
+app.post('/api/categories', verifyAdmin, async (req, res) => {
+    try {
+        await db.collection('Categories').add({ name: req.body.name, CreatedAt: new Date().toISOString() });
+        res.status(201).json({ message: 'Category added!' });
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+app.delete('/api/categories/:id', verifyAdmin, async (req, res) => {
+    try {
+        await db.collection('Categories').doc(req.params.id).delete();
+        res.json({ message: 'Deleted!' });
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+// ── PRODUCTS API ─────────────────────────────
 app.get('/api/products', async (req, res) => { 
     try {
         const snapshot = await db.collection('Products').where('IsActive', '==', 1).get();
@@ -108,6 +133,7 @@ app.delete('/api/products/:id', verifyAdmin, async (req, res) => {
     } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
+// ── CUSTOM ORDERS API ────────────────────────
 app.post('/api/custom-orders', upload.single('image'), async (req, res) => { 
   try {
     const { customerName, phone, customerPhone, email, customerEmail, bagType, color, pearlColor, size, bagSize, dimensions, orderDescription, orderChannel, selectedCategory } = req.body;
@@ -118,54 +144,22 @@ app.post('/api/custom-orders', upload.single('image'), async (req, res) => {
     const trackingId = generateTrackingId('CPO');
 
     await db.collection('CustomOrders').add({
-        CustomerName: customerName || '',
-        CustomerPhone: resolvedPhone,
-        CustomerEmail: resolvedEmail,
-        InspirationImage: imageUrl,
-        BagType: bagType || '',
-        PearlColor: (color || pearlColor || '').trim(),
-        BagSize: (size || bagSize || '').trim(),
-        Dimensions: (dimensions || '').trim(),
-        EstimatedPrice: 0,
-        OrderDescription: orderDescription || '',
-        OrderChannel: orderChannel || 'Website',
-        TrackingId: trackingId,
-        SelectedCategory: selectedCategory || '',
-        WhatsAppNotified: 1,
-        OrderStatus: 'Pending',
-        OrderDate: new Date().toISOString()
+        CustomerName: customerName || '', CustomerPhone: resolvedPhone, CustomerEmail: resolvedEmail,
+        InspirationImage: imageUrl, BagType: bagType || '', PearlColor: (color || pearlColor || '').trim(),
+        BagSize: (size || bagSize || '').trim(), Dimensions: (dimensions || '').trim(),
+        EstimatedPrice: 0, OrderDescription: orderDescription || '', OrderChannel: orderChannel || 'Website',
+        TrackingId: trackingId, SelectedCategory: selectedCategory || '', WhatsAppNotified: 1,
+        OrderStatus: 'Pending', OrderDate: new Date().toISOString()
     });
 
-    // ✅ Send Email
     try {
-        await sendOrderEmail({
-            customerEmail: resolvedEmail,
-            customerName,
-            trackingId,
-            bagType,
-            bagSize: size,
-            pearlColor: color,
-            orderStatus: "Pending"
-        });
-    } catch (err) {
-        console.log("Email Error:", err.message);
-    }
+        await sendOrderEmail({ customerEmail: resolvedEmail, customerName, trackingId, bagType, bagSize: size, pearlColor: color, orderStatus: "Pending" });
+    } catch (err) { console.log("Email Error:", err.message); }
 
-    // WhatsApp
-    try {
-        await sendWhatsAppNotification(customerName, resolvedPhone, `Custom-${trackingId}`, trackingId);
-    } catch (e) {}
+    try { await sendWhatsAppNotification(customerName, resolvedPhone, `Custom-${trackingId}`, trackingId); } catch (e) {}
 
-    res.status(201).json({
-        success: true,
-        message: 'Custom order placed!',
-        trackingId,
-        imageUrl
-    });
-
-} catch (err) {
-    res.status(500).json({ message: 'Server error' });
-}
+    res.status(201).json({ success: true, message: 'Custom order placed!', trackingId, imageUrl });
+  } catch (err) { res.status(500).json({ message: 'Server error' }); }
 });
 
 app.get('/api/custom-orders', verifyAdmin, async (req, res) => { 
@@ -184,69 +178,25 @@ app.put('/api/custom-orders/:id/status', verifyAdmin, async (req, res) => {
     } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
+// ── CHECKOUT ORDERS API ──────────────────────
 app.post('/api/checkout-orders', async (req, res) => {
     try {
-        const {
-            customerName,
-            customerPhone,
-            customerEmail,
-            shippingAddress,
-            totalAmount,
-            cartItems,
-            orderChannel,
-            paymentMethod,
-            transactionId
-        } = req.body;
-
+        const { customerName, customerPhone, customerEmail, shippingAddress, totalAmount, cartItems, orderChannel, paymentMethod, transactionId } = req.body;
         const trackingId = generateTrackingId('PRL');
 
         await db.collection('CheckoutOrders').add({
-            CustomerName: customerName || '',
-            CustomerPhone: customerPhone || '',
-            CustomerEmail: customerEmail || '',
-            ShippingAddress: shippingAddress || '',
-            TotalAmount: Number(totalAmount) || 0,
-            CartItems: JSON.stringify(cartItems || []),
-            OrderChannel: orderChannel || 'Website',
-            PaymentMethod: paymentMethod || 'cod',
-            TransactionId: transactionId || '',
-            TrackingId: trackingId,
-            WhatsAppNotified: 1,
-            OrderStatus: 'Pending',
-            OrderDate: new Date().toISOString()
+            CustomerName: customerName || '', CustomerPhone: customerPhone || '', CustomerEmail: customerEmail || '',
+            ShippingAddress: shippingAddress || '', TotalAmount: Number(totalAmount) || 0,
+            CartItems: JSON.stringify(cartItems || []), OrderChannel: orderChannel || 'Website',
+            PaymentMethod: paymentMethod || 'cod', TransactionId: transactionId || '', TrackingId: trackingId,
+            WhatsAppNotified: 1, OrderStatus: 'Pending', OrderDate: new Date().toISOString()
         });
 
-        // Send Email
-        try {
-            await sendOrderEmail({
-                customerEmail,
-                customerName,
-                trackingId,
-                orderStatus: "Pending"
-            });
-        } catch (e) {
-            console.log("Email Error:", e.message);
-        }
+        try { await sendOrderEmail({ customerEmail, customerName, trackingId, orderStatus: "Pending" }); } catch (e) { console.log("Email Error:", e.message); }
+        try { await sendWhatsAppNotification(customerName, customerPhone, `Web-${trackingId}`, trackingId); } catch (e) {}
 
-        // WhatsApp
-        try {
-            await sendWhatsAppNotification(
-                customerName,
-                customerPhone,
-                `Web-${trackingId}`,
-                trackingId
-            );
-        } catch (e) {}
-
-        res.status(201).json({
-            success: true,
-            message: 'Order confirmed!',
-            trackingId
-        });
-
-    } catch (err) {
-        res.status(500).json({ message: 'Server error' });
-    }
+        res.status(201).json({ success: true, message: 'Order confirmed!', trackingId });
+    } catch (err) { res.status(500).json({ message: 'Server error' }); }
 });
 
 app.get('/api/checkout-orders', verifyAdmin, async (req, res) => { 
@@ -268,6 +218,7 @@ app.put('/api/checkout-orders/:id/status', verifyAdmin, async (req, res) => {
     } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
+// ── OTHER APIs ───────────────────────────────
 app.get('/api/track/:trackingId', async (req, res) => { 
     try {
         const tid = req.params.trackingId.trim().toUpperCase();
@@ -340,52 +291,6 @@ app.put('/api/payment-settings/:key', verifyAdmin, async (req, res) => {
         if (!snapshot.empty) await db.collection('PaymentSettings').doc(snapshot.docs[0].id).update(updateData);
         else await db.collection('PaymentSettings').add(updateData);
         res.json({ message: 'Payment settings updated!' });
-    } catch (err) { res.status(500).json({ message: err.message }); }
-});
-
-app.get('/api/reviews', async (req, res) => { 
-    try {
-        const snapshot = await db.collection('Reviews').where('IsPublished', '==', 1).get();
-        let reviews = [];
-        snapshot.forEach(doc => reviews.push({ Id: doc.id, ...doc.data() }));
-        reviews.sort((a, b) => new Date(b.CreatedAt) - new Date(a.CreatedAt));
-        res.json(reviews);
-    } catch (err) { res.status(500).json({ message: err.message }); }
-});
-
-app.get('/api/reviews/all', verifyAdmin, async (req, res) => { 
-    try {
-        const snapshot = await db.collection('Reviews').get();
-        let reviews = [];
-        snapshot.forEach(doc => reviews.push({ Id: doc.id, ...doc.data() }));
-        reviews.sort((a, b) => new Date(b.CreatedAt) - new Date(a.CreatedAt));
-        res.json(reviews);
-    } catch (err) { res.status(500).json({ message: err.message }); }
-});
-
-app.post('/api/reviews', upload.single('image'), async (req, res) => { 
-    try {
-        const { customerName, reviewText, rating } = req.body;
-        const photoUrl = req.file ? req.file.path : '';
-        await db.collection('Reviews').add({
-            CustomerName: customerName || '', ReviewText: reviewText || '', CustomerPhotoUrl: photoUrl,
-            Rating: Number(rating) || 5, IsPublished: 0, CreatedAt: new Date().toISOString()
-        });
-        res.status(201).json({ message: 'Review submitted!' });
-    } catch (err) { res.status(500).json({ message: err.message }); }
-});
-
-app.put('/api/reviews/:id/publish', verifyAdmin, async (req, res) => { 
-    try {
-        await db.collection('Reviews').doc(req.params.id).update({ IsPublished: req.body.isPublished ? 1 : 0 });
-        res.json({ message: 'Review updated!' });
-    } catch (err) { res.status(500).json({ message: err.message }); }
-});
-
-app.delete('/api/reviews/:id', verifyAdmin, async (req, res) => { 
-    try {
-        await db.collection('Reviews').doc(req.params.id).delete();
-        res.json({ message: 'Review deleted!' });
     } catch (err) { res.status(500).json({ message: err.message }); }
 });
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import axios from 'axios';
 import { useCart } from '../context/CartContext';
 import { Link, useNavigate } from 'react-router-dom';
@@ -185,6 +186,7 @@ const Checkout = () => {
   const STEPS = ['Delivery', 'Payment', 'Confirm'];
 
   return (
+    
     <div className="py-10 px-4 max-w-5xl mx-auto min-h-screen bg-white dark:bg-gray-900 transition-colors">
       <h2 className="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Checkout</h2>
 
@@ -371,6 +373,10 @@ const Checkout = () => {
           </div>
         </div>
       </div>
+<Helmet>
+  <title>Secure Checkout | Custom Pearl</title>
+  <meta name="description" content="Complete your order securely at Custom Pearl. Pay via Cash on Delivery, JazzCash, EasyPaisa, or Bank Transfer." />
+</Helmet>
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useCart } from '../context/CartContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { API_URL } from "../config";
@@ -119,6 +120,10 @@ const Cart = () => {
           </div>
         </div>
       </div>
+      <Helmet>
+  <title>Your Shopping Cart | Custom Pearl</title>
+  <meta name="description" content="Review your selected handcrafted pearl and crochet bags before checkout." />
+</Helmet>
     </div>
   );
 };

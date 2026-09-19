@@ -1,4 +1,5 @@
 import { API_URL } from "../config";
+import { Helmet } from 'react-helmet-async';
 import React from 
 'react';
 import ProductList  from '../components/ProductList';
@@ -50,6 +51,14 @@ const Home = () => {
       <Features />
       <Reviews />
       <FAQs />
+      <Helmet>
+  <title>Custom Pearl | Premium Handcrafted Bags in Pakistan</title>
+  <meta name="description" content="Shop the best handmade pearl and crochet bags in Pakistan. Custom designs available. Free delivery nationwide!" />
+  
+  <meta property="og:title" content="Custom Pearl | Handcrafted Bags" />
+  <meta property="og:description" content="Beautifully handmade pearl & crochet bags. Uniquely yours." />
+  <meta property="og:type" content="website" />
+</Helmet>
     </div>
   );
 };

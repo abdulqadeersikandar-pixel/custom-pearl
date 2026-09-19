@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import axios from 'axios';
 import ProductList from '../components/ProductList';
 
@@ -62,6 +63,10 @@ const Shop = () => {
       
       {/* Product List ko selected category bhej rahe hain */}
       <ProductList selectedCategory={selectedCategory} />
+      <Helmet>
+  <title>Shop Our Collection | Custom Pearl</title>
+  <meta name="description" content="Explore our beautiful collection of handmade pearl and crochet bags. Find your perfect match today." />
+</Helmet>
     </div>
   );
 };

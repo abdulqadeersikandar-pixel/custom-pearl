@@ -69,7 +69,7 @@ const ChatBot = () => {
     if (!botResponse) {
       try {
         const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
-          model: 'llama-3.1-8b-instant', 
+          model: import.meta.env.VITE_GROQ_MODEL, 
           messages: [
             { role: 'system', content: 'You are a helpful customer support assistant for Custom Pearl, an online store selling handcrafted pearl and crochet bags in Pakistan. Give short, polite answers in Roman Urdu/English.' },
             { role: 'user', content: userMsg }

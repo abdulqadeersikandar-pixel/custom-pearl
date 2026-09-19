@@ -158,7 +158,7 @@ const CustomBagForm = () => {
     if (image) data.append('image', image);
 
     try {
-      const res = await axios.post('https://custom-pearl-backend.onrender.com/api/custom-orders', data, {
+      const res = await axios.post('https://custom-pearl.onrender.com/api/custom-orders', data, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 

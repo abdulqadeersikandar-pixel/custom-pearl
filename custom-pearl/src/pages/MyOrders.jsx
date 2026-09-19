@@ -54,7 +54,7 @@ export default function MyOrders() {
 
     try {
       // 🟢 NAYA: Secure POST request to our new backend route
-      const res = await axios.post('https://custom-pearl-backend.onrender.com/api/my-orders/search', {
+      const res = await axios.post('https://custom-pearl.onrender.com/api/my-orders/search', {
         phone: cleanedPhone,
         email: cleanedEmail
       });

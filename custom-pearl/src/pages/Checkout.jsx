@@ -47,7 +47,7 @@ const Checkout = () => {
   const [orderDone, setOrderDone]         = useState(null);
 
   useEffect(() => {
-    axios.get('https://custom-pearl-backend.onrender.com/api/payment-settings')
+    axios.get('https://custom-pearl.onrender.com/api/payment-settings')
       .then(res => {
         const online = res.data
           .filter(p => p.IsActive)
@@ -103,7 +103,7 @@ const Checkout = () => {
           selectedColor: itemColors[`${item.Id}-${idx}`]
       }));
 
-      const res = await axios.post('https://custom-pearl-backend.onrender.com/api/checkout-orders', {
+      const res = await axios.post('https://custom-pearl.onrender.com/api/checkout-orders', {
         customerName:    formData.customerName,
         customerPhone:   formData.customerPhone,
         customerEmail:   formData.customerEmail.toLowerCase(), 

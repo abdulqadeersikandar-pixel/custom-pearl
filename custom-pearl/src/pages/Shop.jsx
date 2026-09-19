@@ -8,7 +8,7 @@ const Shop = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
 
   useEffect(() => {
-    axios.get('https://custom-pearl-backend.onrender.com/api/categories')
+    axios.get('https://custom-pearl.onrender.com/api/categories')
       .then(res => setCategories(res.data))
       .catch(err => console.error("Categories fetch error:", err));
   }, []);

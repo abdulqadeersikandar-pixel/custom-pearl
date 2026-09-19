@@ -11,7 +11,7 @@ const Cart = () => {
       if (item.isCustom && item.Images?.[0]?.startsWith('data:')) return item.Images[0];
       if (item.Images?.length > 0) {
         const img = item.Images[0];
-        return img.startsWith('http') ? img : `https://custom-pearl-backend.onrender.com${img}`;
+        return img.startsWith('http') ? img : `https://custom-pearl.onrender.com${img}`;
       }
     } catch {}
     return null;

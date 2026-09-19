@@ -14,7 +14,7 @@ const ProductList = () => {
   const { addToCart }                   = useCart();
 
   useEffect(() => {
-    axios.get('https://custom-pearl-backend.onrender.com/api/products')
+    axios.get('https://custom-pearl.onrender.com/api/products')
       .then(res => { setProducts(res.data); setFiltered(res.data); })
       .catch(err => console.error('Fetch products:', err));
   }, []);
@@ -34,7 +34,7 @@ const ProductList = () => {
     try {
       if (p.Images?.length > 0) {
         const img = p.Images[0];
-        return img.startsWith('http') ? img : `https://custom-pearl-backend.onrender.com${img}`;
+        return img.startsWith('http') ? img : `https://custom-pearl.onrender.com${img}`;
       }
     } catch {}
     return 'https://placehold.co/300x280/fdf2f8/9d174d?text=Custom+Pearl';

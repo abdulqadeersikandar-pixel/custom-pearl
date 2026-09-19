@@ -21,7 +21,7 @@
 
 ### 🌐 Live Website
 
-[**Frontend**](https://custompearl.netlify.app) · [**Backend API**](https://custom-pearl-backend.onrender.com)
+[**Frontend**](https://custompearl.netlify.app) · [**Backend API**](https://custom-pearl.onrender.com)
 
 </div>
 

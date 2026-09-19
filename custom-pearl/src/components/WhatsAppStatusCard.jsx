@@ -7,7 +7,7 @@ const WhatsAppStatusCard = () => {
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const response = await axios.get('https://custom-pearl-backend.onrender.com/api/whatsapp-status');
+        const response = await axios.get('https://custom-pearl.onrender.com/api/whatsapp-status');
         setStatusData(response.data);
       } catch (error) {
         console.error("WhatsApp status fetch error:", error);

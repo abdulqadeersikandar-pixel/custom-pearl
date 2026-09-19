@@ -84,11 +84,11 @@ const AdminDashboard = () => {
     try {
       const headers = await getAuthHeaders();
       const [c, ch, p, pay, cat] = await Promise.all([
-        axios.get('https://custom-pearl-backend.onrender.com/api/custom-orders', { headers }),
-        axios.get('https://custom-pearl-backend.onrender.com/api/checkout-orders', { headers }),
-        axios.get('https://custom-pearl-backend.onrender.com/api/products'),
-        axios.get('https://custom-pearl-backend.onrender.com/api/payment-settings'),
-        axios.get('https://custom-pearl-backend.onrender.com/api/categories')
+        axios.get('https://custom-pearl.onrender.com/api/custom-orders', { headers }),
+        axios.get('https://custom-pearl.onrender.com/api/checkout-orders', { headers }),
+        axios.get('https://custom-pearl.onrender.com/api/products'),
+        axios.get('https://custom-pearl.onrender.com/api/payment-settings'),
+        axios.get('https://custom-pearl.onrender.com/api/categories')
       ]);
       setCustomOrders(c.data);
       setCheckoutOrders(ch.data);
@@ -126,8 +126,8 @@ const AdminDashboard = () => {
     try {
       const headers = await getAuthHeaders();
       const endpoint = type === 'Custom'
-        ? `https://custom-pearl-backend.onrender.com/api/custom-orders/${id}/status`
-        : `https://custom-pearl-backend.onrender.com/api/checkout-orders/${id}/status`;
+        ? `https://custom-pearl.onrender.com/api/custom-orders/${id}/status`
+        : `https://custom-pearl.onrender.com/api/checkout-orders/${id}/status`;
       await axios.put(endpoint, { status: newStatus }, { headers });
       fetchAll(); 
     } catch (err) { alert("Failed to update order status."); }
@@ -190,8 +190,8 @@ const AdminDashboard = () => {
     try {
       const headers = await getAuthHeaders();
       const reqHeaders = { ...headers, 'Content-Type': 'multipart/form-data' };
-      if (editId) await axios.put(`https://custom-pearl-backend.onrender.com/api/products/${editId}`,fd,{headers:reqHeaders});
-      else        await axios.post('https://custom-pearl-backend.onrender.com/api/products',fd,{headers:reqHeaders});
+      if (editId) await axios.put(`https://custom-pearl.onrender.com/api/products/${editId}`,fd,{headers:reqHeaders});
+      else        await axios.post('https://custom-pearl.onrender.com/api/products',fd,{headers:reqHeaders});
       resetForm(); fetchAll();
     } catch { alert('Failed to save product.'); }
     finally { setPSaving(false); }
@@ -200,19 +200,19 @@ const AdminDashboard = () => {
   const handleDelete = async id => {
     if (!window.confirm('Delete this product?')) return;
     const headers = await getAuthHeaders();
-    await axios.delete(`https://custom-pearl-backend.onrender.com/api/products/${id}`, { headers });
+    await axios.delete(`https://custom-pearl.onrender.com/api/products/${id}`, { headers });
     fetchAll();
   };
 
   const startEdit = p => { setEditId(p.Id);setPName(p.Name);setPPrice(p.Price);setPDesc(p.Description||'');setPCat(p.Category||(categories.length > 0 ? categories[0].name : 'Pearls'));setShowForm(true); };
-  const getImg = p => { if (p.Images?.length>0) { const i=p.Images[0]; return i.startsWith('http')?i:`https://custom-pearl-backend.onrender.com${i}`; } return null; };
+  const getImg = p => { if (p.Images?.length>0) { const i=p.Images[0]; return i.startsWith('http')?i:`https://custom-pearl.onrender.com${i}`; } return null; };
 
   const handleAddCategory = async (e) => {
     e.preventDefault();
     if(!newCatName.trim()) return;
     try {
       const headers = await getAuthHeaders();
-      await axios.post('https://custom-pearl-backend.onrender.com/api/categories', { name: newCatName }, { headers });
+      await axios.post('https://custom-pearl.onrender.com/api/categories', { name: newCatName }, { headers });
       setNewCatName('');
       fetchAll();
     } catch(err) { alert('Failed to add category'); }
@@ -222,7 +222,7 @@ const AdminDashboard = () => {
     if(!window.confirm('Delete this category?')) return;
     try {
       const headers = await getAuthHeaders();
-      await axios.delete(`https://custom-pearl-backend.onrender.com/api/categories/${id}`, { headers });
+      await axios.delete(`https://custom-pearl.onrender.com/api/categories/${id}`, { headers });
       fetchAll();
     } catch(err) { alert('Failed to delete category'); }
   };
@@ -247,7 +247,7 @@ const AdminDashboard = () => {
     setPayBanner({ type:'', msg:'' });
     try {
       const headers = await getAuthHeaders();
-      await axios.put(`https://custom-pearl-backend.onrender.com/api/payment-settings/${key}`, payEdits[key], { headers });
+      await axios.put(`https://custom-pearl.onrender.com/api/payment-settings/${key}`, payEdits[key], { headers });
       setPayBanner({ type:'success', msg:`${key} settings saved!` });
       setTimeout(() => setPayBanner({ type:'', msg:'' }), 3000);
     } catch { setPayBanner({ type:'error', msg:'Failed to save. Try again.' }); }
@@ -383,7 +383,7 @@ const AdminDashboard = () => {
                         {order.InspirationImage && (
                           <div className="col-span-2 sm:col-span-4">
                             <p className="text-xs text-gray-400 mb-1">Inspiration Image</p>
-                            <img src={order.InspirationImage.startsWith('http')?order.InspirationImage:`https://custom-pearl-backend.onrender.com${order.InspirationImage}`}
+                            <img src={order.InspirationImage.startsWith('http')?order.InspirationImage:`https://custom-pearl.onrender.com${order.InspirationImage}`}
                               alt="Inspiration" className="h-24 w-24 object-cover rounded-lg border border-gray-200 dark:border-gray-600" />
                           </div>
                         )}

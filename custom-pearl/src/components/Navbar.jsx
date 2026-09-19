@@ -1,21 +1,38 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
 import { API_URL } from "../config";
+
 const Navbar = () => {
   const { getCartCount }      = useCart();
   const { isDark, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const cartCount               = getCartCount();
+  const location                = useLocation();
 
+  // 🟢 'Customize Order' ka naya link Home aur Shop ke darmiyan add kiya
   const links = [
-    { to: '/',            label: 'Home'        },
-    { to: '/shop',        label: 'Shop'        },
-    { to: '/my-orders',   label: 'My Orders'   },
-    { to: '/track-order', label: 'Track Order' },
-    // { to: '/admin',       label: 'Admin'       },
+    { to: '/',                label: 'Home'            },
+    { to: '/#custom-section', label: 'Customize Order' },
+    { to: '/shop',            label: 'Shop'            },
+    { to: '/my-orders',       label: 'My Orders'       },
+    { to: '/track-order',     label: 'Track Order'     },
   ];
+
+  // 🟢 Smooth scroll logic
+  const handleNavClick = (e, to) => {
+    if (to.includes('#')) {
+      const [path, hash] = to.split('#');
+      // Agar user already home page par hai toh sirf smoothly scroll kare
+      if (location.pathname === path) {
+        e.preventDefault();
+        document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+    // Mobile menu band karne ke liye
+    setMenuOpen(false);
+  };
 
   return (
     <nav className="bg-white dark:bg-gray-900 shadow-md px-6 py-4 sticky top-0 z-50 transition-colors duration-200">
@@ -27,7 +44,7 @@ const Navbar = () => {
         {/* Desktop */}
         <div className="hidden md:flex items-center space-x-6">
           {links.map(l => (
-            <Link key={l.to} to={l.to}
+            <Link key={l.to} to={l.to} onClick={(e) => handleNavClick(e, l.to)}
               className="text-gray-700 dark:text-gray-200 hover:text-pink-500 dark:hover:text-pink-400 font-medium text-sm transition-colors">
               {l.label}
             </Link>
@@ -72,7 +89,7 @@ const Navbar = () => {
       {menuOpen && (
         <div className="md:hidden mt-3 pb-3 space-y-1 border-t border-gray-100 dark:border-gray-700 pt-3">
           {links.map(l => (
-            <Link key={l.to} to={l.to} onClick={() => setMenuOpen(false)}
+            <Link key={l.to} to={l.to} onClick={(e) => handleNavClick(e, l.to)}
               className="block px-2 py-2.5 text-gray-700 dark:text-gray-200 hover:text-pink-500 font-medium text-sm transition-colors">
               {l.label}
             </Link>

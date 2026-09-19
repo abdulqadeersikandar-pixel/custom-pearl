@@ -1,6 +1,5 @@
 import { API_URL } from "../config";
-import React, 
-{ useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
@@ -46,16 +45,17 @@ const FieldError = ({ msg }) =>
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 const CustomBagForm = () => {
+  const [categories, setCategories]     = useState([]); // 🟢 API se aane wali categories
   const [category, setCategory]         = useState('');
   const [formData, setFormData] = useState({
-  customerName: '',
-  phone: '',
-  email: '',
-  bagType: '',
-  size: 'Medium',
-  color: '',
-  orderDescription: '',
-});
+    customerName: '',
+    phone: '',
+    email: '',
+    bagType: '',
+    size: 'Medium',
+    color: '',
+    orderDescription: '',
+  });
   const [image, setImage]               = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [banner, setBanner]             = useState({ type: '', msg: '' });
@@ -66,10 +66,20 @@ const CustomBagForm = () => {
   const { addToCart }                   = useCart();
   const navigate                        = useNavigate();
 
-  // When category changes → reset bag type
+  // Categories fetch karne ka effect
+  useEffect(() => {
+    axios.get('https://custom-pearl.onrender.com/api/categories')
+      .then(res => setCategories(res.data))
+      .catch(err => console.error("Categories fetch error:", err));
+  }, []);
+
+  // When category changes → reset bag type intelligently
   useEffect(() => {
     if (category) {
-      setFormData(prev => ({ ...prev, bagType: BAG_OPTIONS[category][0] }));
+      setFormData(prev => ({ 
+        ...prev, 
+        bagType: BAG_OPTIONS[category] ? BAG_OPTIONS[category][0] : '' 
+      }));
     }
   }, [category]);
 
@@ -97,13 +107,13 @@ const CustomBagForm = () => {
   // ── Validation ───────────────────────────────────────────────────────────────
   const validate = () => {
     const errors = {};
-    if (!formData.email.trim())
-    errors.email = "Email is required.";
-    if (!category)                               errors.category     = 'Please select Pearls or Crochet.';
-    if (!formData.customerName.trim())           errors.customerName = 'Full name is required.';
-    if (!/^03\d{9}$/.test(formData.phone))       errors.phone        = 'Enter a valid 11-digit number starting with 03.';
-    if (!image && !formData.orderDescription.trim())
-                                                 errors.imageOrDesc  = 'Please provide at least one: an inspiration image or a description.';
+    if (!formData.email.trim())                              errors.email = "Email is required.";
+    if (!category)                                           errors.category    = 'Please select a category.';
+    if (!formData.customerName.trim())                       errors.customerName = 'Full name is required.';
+    if (!formData.bagType.trim())                            errors.bagType = 'Bag Type is required.';
+    if (!/^03\d{9}$/.test(formData.phone))                   errors.phone       = 'Enter a valid 11-digit number starting with 03.';
+    if (!image && !formData.orderDescription.trim())         errors.imageOrDesc = 'Please provide at least one: an inspiration image or a description.';
+    
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) {
       setBanner({ type: 'error', msg: 'Please fix the highlighted fields before continuing.' });
@@ -147,7 +157,7 @@ const CustomBagForm = () => {
     const data = new FormData();
     data.append('customerName',     formData.customerName);
     data.append('phone',            formData.phone);
-    data.append('email', formData.email);
+    data.append('email',            formData.email);
     data.append('bagType',          formData.bagType);
     data.append('size',             formData.size);
     data.append('color',            formData.color);
@@ -158,7 +168,7 @@ const CustomBagForm = () => {
     if (image) data.append('image', image);
 
     try {
-      const res = await axios.post('https://custom-pearl.onrender.com/api/custom-orders', data, {
+      const res = await axios.post('https://custom-pearl-backend.onrender.com/api/custom-orders', data, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -168,13 +178,11 @@ const CustomBagForm = () => {
       setBanner({ type: '', msg: '' });
 
       // Open channel after short delay so user sees tracking ID first
-     setTimeout(() => {
+      setTimeout(() => {
+        const dimText = `${dims.length}" × ${dims.width}" × ${dims.height}"`;
 
-    const dimText = `${dims.length}" × ${dims.width}" × ${dims.height}"`;
-
-    if (channel === 'WhatsApp') {
-
-        const message = `
+        if (channel === 'WhatsApp') {
+          const message = `
 🌸 *New Custom Pearl Order*
 
 👤 Name: ${formData.customerName}
@@ -192,15 +200,9 @@ ${formData.orderDescription || "No description"}
 🔖 Tracking ID:
 ${trackingId}
 `;
-
-        window.open(
-            `https://wa.me/923094677278?text=${encodeURIComponent(message)}`,
-            "_blank"
-        );
-
-    } else if (channel === 'Instagram') {
-
-        const instaMessage = `
+          window.open(`https://wa.me/923094677278?text=${encodeURIComponent(message)}`, "_blank");
+        } else if (channel === 'Instagram') {
+          const instaMessage = `
 🌸 New Custom Pearl Order
 
 👤 Name: ${formData.customerName}
@@ -218,15 +220,11 @@ ${formData.orderDescription || "No description"}
 🔖 Tracking ID:
 ${trackingId}
 `;
-
-        navigator.clipboard.writeText(instaMessage);
-
-        window.open("https://www.instagram.com/custompearl/", "_blank");
-
-        alert("Message copied successfully. Paste it into Instagram DM.");
-    }
-
-}, 800);
+          navigator.clipboard.writeText(instaMessage);
+          window.open("https://www.instagram.com/custompearl/", "_blank");
+          alert("Message copied successfully. Paste it into Instagram DM.");
+        }
+      }, 800);
 
     } catch (err) {
       console.error('Custom order error:', err);
@@ -310,21 +308,24 @@ ${trackingId}
             Step 1 — Select Category <span className="text-pink-500">*</span>
           </label>
           <div className="grid grid-cols-2 gap-3">
-            {['Pearls', 'Crochet'].map(cat => (
-              <button
-                key={cat} type="button"
-                onClick={() => { setCategory(cat); setFieldErrors(prev => ({ ...prev, category: '' })); }}
-                className={`py-3 rounded-xl border-2 font-semibold text-sm transition ${
-                  category === cat
-                    ? cat === 'Crochet'
-                      ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-                      : 'border-pink-500 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300'
-                    : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-pink-300'
-                }`}
-              >
-                {cat === 'Pearls' ? '🪬 Pearl Bags' : '🧶 Crochet Bags'}
-              </button>
-            ))}
+            {categories.length > 0 ? categories.map(catObj => {
+              const cat = catObj.name;
+              return (
+                <button
+                  key={catObj.Id} type="button"
+                  onClick={() => { setCategory(cat); setFieldErrors(prev => ({ ...prev, category: '' })); }}
+                  className={`py-3 rounded-xl border-2 font-semibold text-sm transition ${
+                    category === cat
+                      ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300'
+                      : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-pink-300'
+                  }`}
+                >
+                  {cat === 'Pearls' ? '🪬 Pearl Bags' : cat === 'Crochet' ? '🧶 Crochet Bags' : `✨ ${cat}`}
+                </button>
+              );
+            }) : (
+              <p className="text-gray-500 text-sm col-span-2">Loading categories...</p>
+            )}
           </div>
           <FieldError msg={fieldErrors.category} />
         </div>
@@ -357,30 +358,40 @@ ${trackingId}
               />
               <FieldError msg={fieldErrors.phone} />
             </div>
-<div>
-  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-    Email Address
-  </label>
-
-  <input
-    type="email"
-    name="email"
-    value={formData.email}
-    onChange={handleChange}
-    placeholder="example@gmail.com"
-    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
-  />
-</div>
-
-            {/* Bag Type */}
+            
+            {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Bag Type</label>
-              <select
-                name="bagType" value={formData.bagType} onChange={handleChange}
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
-              >
-                {BAG_OPTIONS[category].map(o => <option key={o}>{o}</option>)}
-              </select>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                Email Address <span className="text-pink-500">*</span>
+              </label>
+              <input
+                type="email" name="email" value={formData.email} onChange={handleChange}
+                placeholder="example@gmail.com"
+                className={`w-full border rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-400 ${fieldErrors.email ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'}`}
+              />
+              <FieldError msg={fieldErrors.email} />
+            </div>
+
+            {/* Bag Type (Dynamic logic applied) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                Bag Type <span className="text-pink-500">*</span>
+              </label>
+              {BAG_OPTIONS[category] ? (
+                <select
+                  name="bagType" value={formData.bagType} onChange={handleChange}
+                  className={`w-full border rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-400 ${fieldErrors.bagType ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'}`}
+                >
+                  {BAG_OPTIONS[category].map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              ) : (
+                <input
+                  type="text" name="bagType" value={formData.bagType} onChange={handleChange}
+                  placeholder="e.g. Tote Bag, Clutch, Mini Bag"
+                  className={`w-full border rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-400 ${fieldErrors.bagType ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'}`}
+                />
+              )}
+              <FieldError msg={fieldErrors.bagType} />
             </div>
 
             {/* Size + Dimensions */}
@@ -473,15 +484,9 @@ ${trackingId}
             {/* ── Action Buttons ─────────────────────────────────────────── */}
             {actionStep === null && (
               <div className="grid grid-cols-2 gap-3 pt-2">
-                {/* <button
-                  type="button" onClick={handleAddToCart}
-                  className="w-full border-2 border-pink-600 text-pink-600 dark:text-pink-400 dark:border-pink-400 py-3 rounded-xl font-bold text-sm hover:bg-pink-50 dark:hover:bg-pink-900/20 transition"
-                >
-                  🛒 Add to Cart
-                </button> */}
                 <button
                   type="button" onClick={handleShowConfirm}
-                  className="w-full bg-pink-600 hover:bg-pink-700 text-white py-3 rounded-xl font-bold text-sm transition"
+                  className="w-full bg-pink-600 hover:bg-pink-700 text-white py-3 rounded-xl font-bold text-sm transition col-span-2"
                 >
                   ✅ Confirm Order
                 </button>
@@ -496,7 +501,6 @@ ${trackingId}
                 </p>
 
                 {[
-                  // { channel: 'Website',   label: 'Confirm via Website',   icon: '🌐', cls: 'bg-pink-600 hover:bg-pink-700' },
                   { channel: 'Instagram', label: 'Confirm via Instagram',  icon: '📸', cls: 'bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90' },
                   { channel: 'WhatsApp',  label: 'Confirm via WhatsApp',   icon: '💬', cls: 'bg-green-500 hover:bg-green-600' },
                 ].map(({ channel, label, icon, cls }) => (

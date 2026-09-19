@@ -3,11 +3,10 @@ import axios from 'axios';
 import { auth } from '../firebase';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import WhatsAppStatusCard from '../components/WhatsAppStatusCard';
 import { API_URL } from "../config";
 
 const INACTIVITY_MS = 2 * 60 * 1000;
-const TABS = ['All Orders', 'Manage Products', 'Manage Categories', 'Settings', 'WhatsApp Bot'];
+const TABS = ['All Orders', 'Manage Products', 'Manage Categories', 'Settings'];
 
 const Banner = ({ type, msg }) => {
   if (!msg) return null;
@@ -22,7 +21,7 @@ const Banner = ({ type, msg }) => {
 const getAuthHeaders = async () => {
   if (auth.currentUser) {
     const token = await auth.currentUser.getIdToken();
-    return { Authorization: `Bearer ${token}` };
+    return { headers: { Authorization: `Bearer ${token}` } };
   }
   return {};
 };
@@ -66,7 +65,8 @@ const AdminDashboard = () => {
   const [pImg,   setPImg]      = useState(null);
   const [pSaving,setPSaving]   = useState(false);
 
-  const [newCatName, setNewCatName] = useState('');
+  const [newCatName, setNewCatName]   = useState('');
+  const [typeInputs, setTypeInputs]   = useState({}); // 🟢 Bag Types Inputs state
 
   const [oldPw,  setOldPw]    = useState('');
   const [newPw,  setNewPw]    = useState('');
@@ -82,13 +82,13 @@ const AdminDashboard = () => {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const headers = await getAuthHeaders();
+      const authConfig = await getAuthHeaders();
       const [c, ch, p, pay, cat] = await Promise.all([
-        axios.get('https://custom-pearl.onrender.com/api/custom-orders', { headers }),
-        axios.get('https://custom-pearl.onrender.com/api/checkout-orders', { headers }),
-        axios.get('https://custom-pearl.onrender.com/api/products'),
-        axios.get('https://custom-pearl.onrender.com/api/payment-settings'),
-        axios.get('https://custom-pearl.onrender.com/api/categories')
+        axios.get('https://custom-pearl-backend.onrender.com/api/custom-orders', authConfig),
+        axios.get('https://custom-pearl-backend.onrender.com/api/checkout-orders', authConfig),
+        axios.get('https://custom-pearl-backend.onrender.com/api/products'),
+        axios.get('https://custom-pearl-backend.onrender.com/api/payment-settings'),
+        axios.get('https://custom-pearl-backend.onrender.com/api/categories')
       ]);
       setCustomOrders(c.data);
       setCheckoutOrders(ch.data);
@@ -124,11 +124,11 @@ const AdminDashboard = () => {
 
   const handleStatusChange = async (id, type, newStatus) => {
     try {
-      const headers = await getAuthHeaders();
+      const authConfig = await getAuthHeaders();
       const endpoint = type === 'Custom'
-        ? `https://custom-pearl.onrender.com/api/custom-orders/${id}/status`
-        : `https://custom-pearl.onrender.com/api/checkout-orders/${id}/status`;
-      await axios.put(endpoint, { status: newStatus }, { headers });
+        ? `https://custom-pearl-backend.onrender.com/api/custom-orders/${id}/status`
+        : `https://custom-pearl-backend.onrender.com/api/checkout-orders/${id}/status`;
+      await axios.put(endpoint, { status: newStatus }, authConfig);
       fetchAll(); 
     } catch (err) { alert("Failed to update order status."); }
   };
@@ -158,28 +158,6 @@ const AdminDashboard = () => {
     return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${m[ch]||'bg-gray-100 text-gray-600'}`}>{ic[ch]||'📦'} {ch||'Website'}</span>;
   };
 
-  const handleExportExcel = () => {
-    const headers = ['Order Date', 'Type', 'Tracking ID', 'Customer Name', 'Phone', 'Status', 'Total Amount', 'Payment Method'];
-    const csvData = filteredOrders.map(order => {
-      const date = order.OrderDate ? new Date(order.OrderDate).toLocaleDateString('en-GB') : '-';
-      const amount = order.TotalAmount || order.EstimatedPrice || 0;
-      const payment = order.PaymentMethod === 'cod' ? 'Cash on Delivery' : order.PaymentMethod || '-';
-      return [date, order._type, order.TrackingId || '-', `"${order.CustomerName}"`, `"${order.CustomerPhone}"`, order.OrderStatus || 'Pending', amount, payment].join(',');
-    });
-    const csvString = [headers.join(','), ...csvData].join('\n');
-    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'Orders_Report.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const resetForm = () => { setPName('');setPPrice('');setPDesc('');setPCat(categories.length > 0 ? categories[0].name : 'Pearls');setPImg(null);setEditId(null);setShowForm(false); };
-
   const handleProductSave = async (e) => {
     e.preventDefault();
     if (!pName||!pPrice) return;
@@ -188,10 +166,10 @@ const AdminDashboard = () => {
     fd.append('name',pName); fd.append('price',pPrice); fd.append('description',pDesc); fd.append('category',pCat);
     if (pImg) fd.append('image',pImg);
     try {
-      const headers = await getAuthHeaders();
-      const reqHeaders = { ...headers, 'Content-Type': 'multipart/form-data' };
-      if (editId) await axios.put(`https://custom-pearl.onrender.com/api/products/${editId}`,fd,{headers:reqHeaders});
-      else        await axios.post('https://custom-pearl.onrender.com/api/products',fd,{headers:reqHeaders});
+      const authConfig = await getAuthHeaders();
+      authConfig.headers['Content-Type'] = 'multipart/form-data';
+      if (editId) await axios.put(`https://custom-pearl-backend.onrender.com/api/products/${editId}`,fd, authConfig);
+      else        await axios.post('https://custom-pearl-backend.onrender.com/api/products',fd, authConfig);
       resetForm(); fetchAll();
     } catch { alert('Failed to save product.'); }
     finally { setPSaving(false); }
@@ -199,20 +177,22 @@ const AdminDashboard = () => {
 
   const handleDelete = async id => {
     if (!window.confirm('Delete this product?')) return;
-    const headers = await getAuthHeaders();
-    await axios.delete(`https://custom-pearl.onrender.com/api/products/${id}`, { headers });
+    const authConfig = await getAuthHeaders();
+    await axios.delete(`https://custom-pearl-backend.onrender.com/api/products/${id}`, authConfig);
     fetchAll();
   };
 
+  const resetForm = () => { setPName('');setPPrice('');setPDesc('');setPCat(categories.length > 0 ? categories[0].name : 'Pearls');setPImg(null);setEditId(null);setShowForm(false); };
   const startEdit = p => { setEditId(p.Id);setPName(p.Name);setPPrice(p.Price);setPDesc(p.Description||'');setPCat(p.Category||(categories.length > 0 ? categories[0].name : 'Pearls'));setShowForm(true); };
-  const getImg = p => { if (p.Images?.length>0) { const i=p.Images[0]; return i.startsWith('http')?i:`https://custom-pearl.onrender.com${i}`; } return null; };
+  const getImg = p => { if (p.Images?.length>0) { const i=p.Images[0]; return i.startsWith('http')?i:`https://custom-pearl-backend.onrender.com${i}`; } return null; };
 
+  // ── 🟢 Manage Categories & Bag Types Functions ──
   const handleAddCategory = async (e) => {
     e.preventDefault();
     if(!newCatName.trim()) return;
     try {
-      const headers = await getAuthHeaders();
-      await axios.post('https://custom-pearl.onrender.com/api/categories', { name: newCatName }, { headers });
+      const authConfig = await getAuthHeaders();
+      await axios.post('https://custom-pearl-backend.onrender.com/api/categories', { name: newCatName }, authConfig);
       setNewCatName('');
       fetchAll();
     } catch(err) { alert('Failed to add category'); }
@@ -221,10 +201,31 @@ const AdminDashboard = () => {
   const handleDeleteCategory = async (id) => {
     if(!window.confirm('Delete this category?')) return;
     try {
-      const headers = await getAuthHeaders();
-      await axios.delete(`https://custom-pearl.onrender.com/api/categories/${id}`, { headers });
+      const authConfig = await getAuthHeaders();
+      await axios.delete(`https://custom-pearl-backend.onrender.com/api/categories/${id}`, authConfig);
       fetchAll();
     } catch(err) { alert('Failed to delete category'); }
+  };
+
+  const handleAddBagType = async (catId, currentTypes) => {
+    const newType = typeInputs[catId]?.trim();
+    if (!newType) return;
+    const updatedTypes = [...(currentTypes || []), newType];
+    try {
+      const authConfig = await getAuthHeaders();
+      await axios.put(`https://custom-pearl-backend.onrender.com/api/categories/${catId}`, { bagTypes: updatedTypes }, authConfig);
+      setTypeInputs(prev => ({ ...prev, [catId]: '' }));
+      fetchAll();
+    } catch (err) { alert('Failed to add bag type'); }
+  };
+
+  const handleRemoveBagType = async (catId, currentTypes, indexToRemove) => {
+    const updatedTypes = currentTypes.filter((_, idx) => idx !== indexToRemove);
+    try {
+      const authConfig = await getAuthHeaders();
+      await axios.put(`https://custom-pearl-backend.onrender.com/api/categories/${catId}`, { bagTypes: updatedTypes }, authConfig);
+      fetchAll();
+    } catch (err) { alert('Failed to remove bag type'); }
   };
 
   const handleChangePassword = async e => {
@@ -246,8 +247,8 @@ const AdminDashboard = () => {
   const savePayMethod = async key => {
     setPayBanner({ type:'', msg:'' });
     try {
-      const headers = await getAuthHeaders();
-      await axios.put(`https://custom-pearl.onrender.com/api/payment-settings/${key}`, payEdits[key], { headers });
+      const authConfig = await getAuthHeaders();
+      await axios.put(`https://custom-pearl-backend.onrender.com/api/payment-settings/${key}`, payEdits[key], authConfig);
       setPayBanner({ type:'success', msg:`${key} settings saved!` });
       setTimeout(() => setPayBanner({ type:'', msg:'' }), 3000);
     } catch { setPayBanner({ type:'error', msg:'Failed to save. Try again.' }); }
@@ -308,9 +309,6 @@ const AdminDashboard = () => {
                     </button>
                   ))}
                 </div>
-                <button onClick={handleExportExcel} className="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2">
-                  <span>📊</span> Export to Excel
-                </button>
               </div>
 
               <div className="relative w-full sm:max-w-sm mt-3 sm:mt-0">
@@ -383,7 +381,7 @@ const AdminDashboard = () => {
                         {order.InspirationImage && (
                           <div className="col-span-2 sm:col-span-4">
                             <p className="text-xs text-gray-400 mb-1">Inspiration Image</p>
-                            <img src={order.InspirationImage.startsWith('http')?order.InspirationImage:`https://custom-pearl.onrender.com${order.InspirationImage}`}
+                            <img src={order.InspirationImage.startsWith('http')?order.InspirationImage:`https://custom-pearl-backend.onrender.com${order.InspirationImage}`}
                               alt="Inspiration" className="h-24 w-24 object-cover rounded-lg border border-gray-200 dark:border-gray-600" />
                           </div>
                         )}
@@ -410,10 +408,7 @@ const AdminDashboard = () => {
                             <div className="space-y-1">
                               {order.CartItems.map((item,i) => (
                                 <div key={i} className="flex justify-between text-sm bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-1.5">
-                                  <span className="text-gray-700 dark:text-gray-200">
-                                    {item.Name} × {item.qty} 
-                                    {item.selectedColor && <span className="ml-2 text-xs font-bold text-pink-500">[{item.selectedColor}]</span>}
-                                  </span>
+                                  <span className="text-gray-700 dark:text-gray-200">{item.Name} × {item.qty}</span>
                                   <span className="font-semibold text-pink-600">{item.Price>0?`Rs. ${(Number(item.Price)*item.qty).toLocaleString()}`:'TBD'}</span>
                                 </div>
                               ))}
@@ -483,7 +478,6 @@ const AdminDashboard = () => {
                   </select>
                   <div>
                     <input type="file" accept="image/*" onChange={e=>setPImg(e.target.files[0])} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 text-sm bg-white dark:bg-gray-700 dark:text-white" />
-                    {editId && <p className="text-xs text-gray-400 mt-1">Leave empty to keep existing image.</p>}
                   </div>
                   <div className="flex gap-3 pt-2">
                     <button type="submit" disabled={pSaving} className="flex-1 bg-pink-600 hover:bg-pink-700 text-white py-2.5 rounded-lg font-semibold text-sm transition disabled:opacity-50">
@@ -497,27 +491,51 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* ── NEW MANAGE CATEGORIES TAB ── */}
+        {/* ── 🟢 MANAGE CATEGORIES & BAG TYPES ── */}
         {activeTab==='Manage Categories' && (
           <div className="space-y-6 max-w-2xl">
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm">
-                <h3 className="font-bold text-gray-800 dark:text-white mb-1">🏷️ Manage Store Categories</h3>
-                <p className="text-xs text-gray-400 mb-5">Add or remove product categories. This will automatically update the shop filters.</p>
+                <h3 className="font-bold text-gray-800 dark:text-white mb-1">🏷️ Manage Categories &amp; Bag Types</h3>
+                <p className="text-xs text-gray-400 mb-5">Add or remove categories, and manage the "Bag Types" dropdown for each category.</p>
                 
                 <form onSubmit={handleAddCategory} className="flex gap-3 mb-6">
-                    <input type="text" placeholder="e.g. Handmade Bags, Wedding Pearls" required
+                    <input type="text" placeholder="New Category (e.g. Resin Bags)" required
                            value={newCatName} onChange={e => setNewCatName(e.target.value)}
                            className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-400" />
                     <button type="submit" className="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2.5 rounded-lg font-bold text-sm transition">Add Category</button>
                 </form>
 
-                <div className="space-y-2">
+                <div className="space-y-4">
                     {categories.length === 0 ? (
                         <p className="text-sm text-gray-500">No categories found. Add your first category above.</p>
                     ) : categories.map(cat => (
-                        <div key={cat.Id} className="flex items-center justify-between border border-gray-200 dark:border-gray-600 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
-                            <span className="font-semibold text-gray-700 dark:text-gray-200">{cat.name}</span>
-                            <button onClick={() => handleDeleteCategory(cat.Id)} className="text-red-500 hover:text-red-700 font-bold text-xs bg-red-50 dark:bg-red-900/20 px-3 py-1 rounded">Delete</button>
+                        <div key={cat.Id} className="border border-gray-200 dark:border-gray-600 p-4 rounded-xl bg-gray-50 dark:bg-gray-700/30 shadow-sm">
+                            <div className="flex items-center justify-between mb-3 border-b border-gray-200 dark:border-gray-600 pb-2">
+                              <span className="font-bold text-gray-800 dark:text-white text-lg">{cat.name}</span>
+                              <button onClick={() => handleDeleteCategory(cat.Id)} className="text-red-500 hover:text-red-700 font-bold text-xs px-3 py-1 rounded border border-red-200 dark:border-red-800">Delete Category</button>
+                            </div>
+                            
+                            {/* Bag Types List */}
+                            <div className="mb-3">
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 font-medium">Available Bag Types:</p>
+                              <div className="flex flex-wrap gap-2">
+                                {(cat.bagTypes || []).length === 0 && <span className="text-xs text-gray-400 italic">No bag types added yet.</span>}
+                                {(cat.bagTypes || []).map((type, idx) => (
+                                  <span key={idx} className="bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 px-3 py-1 rounded-full text-xs font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                                    {type}
+                                    <button onClick={() => handleRemoveBagType(cat.Id, cat.bagTypes, idx)} className="text-red-400 hover:text-red-600 text-sm leading-none">&times;</button>
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Add New Bag Type */}
+                            <div className="flex gap-2">
+                              <input type="text" placeholder="Add Bag Type (e.g. Mini Clutch)"
+                                value={typeInputs[cat.Id] || ''} onChange={e => setTypeInputs(prev => ({...prev, [cat.Id]: e.target.value}))}
+                                className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg p-2 text-xs bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-pink-400" />
+                              <button onClick={() => handleAddBagType(cat.Id, cat.bagTypes)} className="bg-gray-800 hover:bg-black dark:bg-gray-200 dark:text-black dark:hover:bg-white text-white px-4 py-2 rounded-lg font-bold text-xs transition">Add Type</button>
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -529,7 +547,6 @@ const AdminDashboard = () => {
           <div className="space-y-6 max-w-2xl">
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm">
               <h3 className="font-bold text-gray-800 dark:text-white mb-1">🏪 Business Information</h3>
-              <p className="text-xs text-gray-400 mb-4">Update your contact details shown on the website and order messages.</p>
               <Banner type={bizBanner.type} msg={bizBanner.msg} />
               <div className="space-y-3">
                 {[
@@ -537,104 +554,16 @@ const AdminDashboard = () => {
                   { key:'phone',    label:'Contact Phone',   icon:'📞', ph:'03001234567'                     },
                   { key:'whatsapp', label:'WhatsApp Number', icon:'💬', ph:'923001234567 (with country code)' },
                   { key:'insta',    label:'Instagram Handle', icon:'📸', ph:'custompearl'                    },
-                  { key:'facebook', label:'Facebook Page',    icon:'👤', ph:'custompearl'                    },
-                  { key:'address',  label:'Shop Address',     icon:'📍', ph:'Street, City, Pakistan'         },
                 ].map(f => (
                   <div key={f.key}>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{f.icon} {f.label}</label>
-                    <input type="text" value={bizInfo[f.key]} onChange={e => setBizInfo(prev=>({...prev,[f.key]:e.target.value}))}
-                      placeholder={f.ph}
+                    <input type="text" value={bizInfo[f.key]} onChange={e => setBizInfo(prev=>({...prev,[f.key]:e.target.value}))} placeholder={f.ph}
                       className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-400" />
                   </div>
                 ))}
-                <button onClick={saveBizInfo} className="w-full bg-pink-600 hover:bg-pink-700 text-white py-2.5 rounded-lg font-bold text-sm transition mt-2">
-                  Save Business Info
-                </button>
+                <button onClick={saveBizInfo} className="w-full bg-pink-600 hover:bg-pink-700 text-white py-2.5 rounded-lg font-bold text-sm transition mt-2">Save Business Info</button>
               </div>
             </div>
-
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm">
-              <h3 className="font-bold text-gray-800 dark:text-white mb-1">💳 Payment Method Settings</h3>
-              <p className="text-xs text-gray-400 mb-4">Update account numbers shown to customers during checkout.</p>
-              <Banner type={payBanner.type} msg={payBanner.msg} />
-              <div className="space-y-5">
-                {paySettings.map(pm => (
-                  <div key={pm.MethodKey} className="border border-gray-200 dark:border-gray-600 rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-semibold text-gray-800 dark:text-white text-sm">
-                        {PM_ICONS[pm.MethodKey]||'💳'} {pm.MethodLabel}
-                      </h4>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">Active</span>
-                        <div className="relative" onClick={() => updatePayEdit(pm.MethodKey,'isActive', payEdits[pm.MethodKey]?.isActive ? 0 : 1)}>
-                          <div className={`w-9 h-5 rounded-full transition-colors ${payEdits[pm.MethodKey]?.isActive?'bg-pink-600':'bg-gray-300 dark:bg-gray-600'}`} />
-                          <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${payEdits[pm.MethodKey]?.isActive?'translate-x-4':''}`} />
-                        </div>
-                      </label>
-                    </div>
-                    <div className="space-y-2">
-                      <div>
-                        <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Account Title</label>
-                        <input type="text" value={payEdits[pm.MethodKey]?.accountTitle||''}
-                          onChange={e => updatePayEdit(pm.MethodKey,'accountTitle',e.target.value)} placeholder="e.g. Custom Pearl"
-                          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-400" />
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">{pm.MethodKey==='bank'?'IBAN / Account Number':'Mobile Number'}</label>
-                        <input type="text" value={payEdits[pm.MethodKey]?.accountNumber||''}
-                          onChange={e => updatePayEdit(pm.MethodKey,'accountNumber',e.target.value)} placeholder={pm.MethodKey==='bank'?'PK00XXXX…':'03XXXXXXXXX'}
-                          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-400" />
-                      </div>
-                      {pm.MethodKey==='bank' && (
-                        <div>
-                          <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Bank Name</label>
-                          <input type="text" value={payEdits[pm.MethodKey]?.bankName||''}
-                            onChange={e => updatePayEdit(pm.MethodKey,'bankName',e.target.value)} placeholder="e.g. HBL, Meezan, UBL"
-                            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-400" />
-                        </div>
-                      )}
-                      <button onClick={() => savePayMethod(pm.MethodKey)} className="w-full bg-gray-800 dark:bg-gray-700 hover:bg-gray-900 dark:hover:bg-gray-600 text-white py-2 rounded-lg text-sm font-semibold transition mt-1">
-                        Save {pm.MethodLabel}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm">
-              <h3 className="font-bold text-gray-800 dark:text-white mb-1">🔑 Change Password</h3>
-              <p className="text-xs text-gray-400 mb-4">You must enter your current password to set a new one.</p>
-              <Banner type={pwBanner.type} msg={pwBanner.msg} />
-              <form onSubmit={handleChangePassword} className="space-y-3">
-                {[
-                  { val:oldPw,  set:setOldPw,  label:'Current Password',    ph:'Enter your current password' },
-                  { val:newPw,  set:setNewPw,  label:'New Password',         ph:'Minimum 6 characters'       },
-                  { val:confPw, set:setConfPw, label:'Confirm New Password', ph:'Re-enter new password'       },
-                ].map(f => (
-                  <div key={f.label}>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{f.label} <span className="text-pink-500">*</span></label>
-                    <input type="password" value={f.val} onChange={e=>f.set(e.target.value)} placeholder={f.ph} required
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-400" />
-                  </div>
-                ))}
-                <button type="submit" className="w-full bg-pink-600 hover:bg-pink-700 text-white py-2.5 rounded-lg font-bold text-sm transition mt-1">Update Password</button>
-              </form>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm">
-              <h3 className="font-bold text-gray-800 dark:text-white mb-1">⏱ Session</h3>
-              <p className="text-xs text-gray-400 mb-4">You are automatically logged out after 2 minutes of inactivity.</p>
-              <button onClick={handleLogout} className="w-full border border-red-300 text-red-600 dark:text-red-400 py-2.5 rounded-lg font-semibold text-sm hover:bg-red-50 dark:hover:bg-red-900/20 transition">
-                Logout Now
-              </button>
-            </div>
-          </div>
-        )}
-        
-        {activeTab === 'WhatsApp Bot' && (
-          <div className="flex justify-center p-4">
-            <WhatsAppStatusCard />
           </div>
         )}
       </div>

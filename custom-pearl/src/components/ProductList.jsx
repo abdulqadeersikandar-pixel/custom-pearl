@@ -2,21 +2,31 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useCart } from '../context/CartContext';
 import { API_URL } from "../config";
-const CATEGORIES = ['All', 'Pearls', 'Crochet'];
 
 const ProductList = () => {
   const [products, setProducts]         = useState([]);
   const [filtered, setFiltered]         = useState([]);
+  const [categories, setCategories]     = useState([]); // 🟢 Dynamic categories state
   const [searchTerm, setSearchTerm]     = useState('');
   const [selectedCat, setSelectedCat]   = useState('All');
   const [sortBy, setSortBy]             = useState('default');
   const [flashId, setFlashId]           = useState(null);
+  
+  // 🟢 Show More / Show Less state
+  const [showAllCategories, setShowAllCategories] = useState(false);
+  
   const { addToCart }                   = useCart();
 
   useEffect(() => {
-    axios.get('https://custom-pearl.onrender.com/api/products')
+    // 1. Fetch Products
+    axios.get('https://custom-pearl-backend.onrender.com/api/products')
       .then(res => { setProducts(res.data); setFiltered(res.data); })
       .catch(err => console.error('Fetch products:', err));
+
+    // 2. Fetch Dynamic Categories
+    axios.get('https://custom-pearl.onrender.com/api/categories')
+      .then(res => setCategories(res.data))
+      .catch(err => console.error('Fetch categories:', err));
   }, []);
 
   useEffect(() => {
@@ -24,9 +34,11 @@ const ProductList = () => {
     const q = searchTerm.toLowerCase().trim();
     if (q) result = result.filter(p => (p.Name||'').toLowerCase().includes(q) || (p.Description||'').toLowerCase().includes(q));
     if (selectedCat !== 'All') result = result.filter(p => p.Category === selectedCat);
+    
     if (sortBy === 'price-asc')  result.sort((a,b) => Number(a.Price) - Number(b.Price));
     if (sortBy === 'price-desc') result.sort((a,b) => Number(b.Price) - Number(a.Price));
     if (sortBy === 'name')       result.sort((a,b) => (a.Name||'').localeCompare(b.Name||''));
+    
     setFiltered(result);
   }, [searchTerm, selectedCat, sortBy, products]);
 
@@ -34,7 +46,7 @@ const ProductList = () => {
     try {
       if (p.Images?.length > 0) {
         const img = p.Images[0];
-        return img.startsWith('http') ? img : `https://custom-pearl.onrender.com${img}`;
+        return img.startsWith('http') ? img : `https://custom-pearl-backend.onrender.com${img}`;
       }
     } catch {}
     return 'https://placehold.co/300x280/fdf2f8/9d174d?text=Custom+Pearl';
@@ -46,13 +58,17 @@ const ProductList = () => {
     setTimeout(() => setFlashId(null), 1500);
   };
 
+  // 🟢 Agar showAll true hai toh sab dikhao, warna sirf pehli 2 categories
+  const visibleCategories = showAllCategories ? categories : categories.slice(0, 2);
+
   return (
     <div className="py-10 px-6 bg-white dark:bg-gray-900 transition-colors">
       <h2 className="text-3xl font-bold text-center mb-2 text-gray-800 dark:text-white">Shop Our Collection</h2>
       <p className="text-center text-gray-500 dark:text-gray-400 mb-8 text-sm">Handcrafted pearl &amp; crochet bags</p>
 
       {/* Filter bar */}
-      <div className="max-w-5xl mx-auto mb-8 flex flex-col sm:flex-row gap-3 items-stretch">
+      <div className="max-w-5xl mx-auto mb-8 flex flex-col md:flex-row gap-3 items-stretch">
+        
         {/* Search */}
         <div className="relative flex-1">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
@@ -64,16 +80,36 @@ const ProductList = () => {
           )}
         </div>
 
-        {/* Category tabs */}
-        <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden bg-white dark:bg-gray-800">
-          {CATEGORIES.map(cat => (
-            <button key={cat} onClick={() => setSelectedCat(cat)}
-              className={`px-4 py-2.5 text-sm font-medium transition-colors ${
-                selectedCat === cat ? 'bg-pink-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-pink-50 dark:hover:bg-gray-700'
-              }`}>
-              {cat === 'Pearls' ? '🪬 Pearls' : cat === 'Crochet' ? '🧶 Crochet' : 'All'}
+        {/* 🟢 Dynamic Category tabs with Show More Logic */}
+        <div className="flex flex-wrap rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden bg-white dark:bg-gray-800">
+          
+          <button onClick={() => setSelectedCat('All')}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors border-r border-gray-200 dark:border-gray-700 last:border-none ${
+              selectedCat === 'All' ? 'bg-pink-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-pink-50 dark:hover:bg-gray-700'
+            }`}>
+            All
+          </button>
+          
+          {visibleCategories.map(catObj => {
+            const cat = catObj.name;
+            return (
+              <button key={catObj.Id} onClick={() => setSelectedCat(cat)}
+                className={`px-4 py-2.5 text-sm font-medium transition-colors border-r border-gray-200 dark:border-gray-700 last:border-none ${
+                  selectedCat === cat ? 'bg-pink-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-pink-50 dark:hover:bg-gray-700'
+                }`}>
+                {cat === 'Pearls' ? '🪬 Pearls' : cat === 'Crochet' ? '🧶 Crochet' : `✨ ${cat}`}
+              </button>
+            );
+          })}
+
+          {/* Show More / Show Less Button */}
+          {categories.length > 2 && (
+            <button onClick={() => setShowAllCategories(!showAllCategories)}
+              className="px-4 py-2.5 text-sm font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 border-l border-gray-200 dark:border-gray-700">
+              {showAllCategories ? 'Show Less' : 'Show More'}
             </button>
-          ))}
+          )}
+          
         </div>
 
         {/* Sort */}

@@ -72,8 +72,23 @@ app.get('/api/categories', async (req, res) => {
 
 app.post('/api/categories', verifyAdmin, async (req, res) => {
     try {
-        await db.collection('Categories').add({ name: req.body.name, CreatedAt: new Date().toISOString() });
+        // 🟢 Nayi category banate waqt bagTypes ka empty array laazmi banayein
+        await db.collection('Categories').add({ 
+            name: req.body.name, 
+            bagTypes: [], 
+            CreatedAt: new Date().toISOString() 
+        });
         res.status(201).json({ message: 'Category added!' });
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+// 🟢 NAYA ROUTE: Bag Types ko update karne ke liye
+app.put('/api/categories/:id', verifyAdmin, async (req, res) => {
+    try {
+        await db.collection('Categories').doc(req.params.id).update({
+            bagTypes: req.body.bagTypes
+        });
+        res.json({ message: 'Bag types updated!' });
     } catch (err) { res.status(500).json({ message: err.message }); }
 });
 

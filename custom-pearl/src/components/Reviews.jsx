@@ -2,7 +2,7 @@ import React from 'react';
 import { API_URL } from "../config";
 const reviews = [
   { id:1, name:'Ayesha Khan.',   text:'The quality of my pearl bag is absolutely amazing. The custom design was exactly what I had in mind.', rating:5 },
-  { id:2, name:'Fatima Zulfiqar.',   text:'The neatness of the work is top-notch. Highly recommend for anyone wanting a custom crochet bag.',    rating:5 },
+  { id:2, name:'Fatima Zulfiqar.',   text:'The neatness of the work is top-notch. Highly recommend for anyone wanting a custom beaded bag.',    rating:5 },
   { id:3, name:'Zainab Ali',  text:'Fast delivery and the packaging was so premium. Absolutely loved my mini pearl bag!',                  rating:5 },
 ];
 

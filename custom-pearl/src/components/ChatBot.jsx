@@ -25,14 +25,14 @@ const ChatBot = () => {
     'price': 'Har bag ki price uske design aur size ke hisaab se hoti hai. Aap Shop section mein prices check kar sakte hain.',
     'location': 'Humari delivery pure Pakistan mein hoti hai.',
     'artist': 'Hamari art team aapke bataye hue design ko bag par perfectly hand-paint kar sakti hai.',
-    'care': 'Apne pearl ya crochet bag ko saaf rakhne ke liye naram (soft) kapre ka istemal karein. Perfume ya tez chemicals se bachayein.',
-    'clean': 'Apne pearl ya crochet bag ko saaf rakhne ke liye naram (soft) kapre ka istemal karein. Perfume ya tez chemicals se bachayein.',
+    'care': 'Apne pearl ya beaded bag ko saaf rakhne ke liye naram (soft) kapre ka istemal karein. Perfume ya tez chemicals se bachayein.',
+    'clean': 'Apne pearl ya beaded bag ko saaf rakhne ke liye naram (soft) kapre ka istemal karein. Perfume ya tez chemicals se bachayein.',
     'change': 'Agar aapka order abhi dispatch (shipped) nahi hua, toh aap WhatsApp par rabta kar ke usme tabdeeli karwa sakte hain.',
     'modify': 'Agar aapka order abhi dispatch (shipped) nahi hua, toh aap WhatsApp par rabta kar ke usme tabdeeli karwa sakte hain.',
     'discount': 'Humari latest sales aur promo codes ki details ke liye aap hamara Instagram page follow kar sakte hain.',
     'sale': 'Humari latest sales aur promo codes ki details ke liye aap hamara Instagram page follow kar sakte hain.',
-    'material': 'Hum premium quality pearls aur high-grade crochet threads use karte hain taake aapka bag khoobsurat aur long-lasting ho.',
-    'quality': 'Hum premium quality pearls aur high-grade crochet threads use karte hain taake aapka bag khoobsurat aur long-lasting ho.',
+    'material': 'Hum premium quality pearls aur high-grade beaded threads use karte hain taake aapka bag khoobsurat aur long-lasting ho.',
+    'quality': 'Hum premium quality pearls aur high-grade beaded threads use karte hain taake aapka bag khoobsurat aur long-lasting ho.',
     'bulk': 'Ji haan! Bulk ya wholesale orders par special discount available hai. Mazeed maloomat ke liye WhatsApp par message karein.',
     'wholesale': 'Ji haan! Bulk ya wholesale orders par special discount available hai. Mazeed maloomat ke liye WhatsApp par message karein.',
     'stock': 'Out of stock items aam tor par 1-2 hafte mein restock ho jate hain. Aap advance order ke liye humein WhatsApp kar sakte hain.',
@@ -71,7 +71,7 @@ const ChatBot = () => {
         const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
           model: import.meta.env.VITE_GROQ_MODEL, 
           messages: [
-            { role: 'system', content: 'You are a helpful customer support assistant for Custom Pearl, an online store selling handcrafted pearl and crochet bags in Pakistan. Give short, polite answers in Roman Urdu/English.' },
+            { role: 'system', content: 'You are a helpful customer support assistant for Custom Pearl, an online store selling handcrafted pearl and beaded bags in Pakistan. Give short, polite answers in Roman Urdu/English.' },
             { role: 'user', content: userMsg }
           ],
           temperature: 0.7,

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { auth } from '../firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -56,6 +57,24 @@ const Login = () => {
           </button>
         </form>
       </div>
+      <Helmet>
+  <title>Login | Custom Pearl</title>
+
+  <meta
+    name="description"
+    content="Login to your Custom Pearl account to manage your orders and access your account."
+  />
+
+  <link
+    rel="canonical"
+    href="https://custompearl.netlify.app/login"
+  />
+
+  <meta
+    name="robots"
+    content="noindex, nofollow"
+  />
+</Helmet>
     </div>
   );
 };

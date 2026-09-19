@@ -17,6 +17,7 @@ import { OrderProvider } from './context/OrderContext';
 
 function App() {
   return (
+    <HelmetProvider>
     <ThemeProvider>
       <CartProvider>
         <OrderProvider> 
@@ -45,6 +46,7 @@ function App() {
         </OrderProvider> 
       </CartProvider>
     </ThemeProvider>
+    </HelmetProvider>
   );
 }
 

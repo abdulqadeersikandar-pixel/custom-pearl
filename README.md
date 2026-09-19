@@ -2,7 +2,7 @@
 
 # ✨ Custom Pearl
 
-### A Production-Ready Full Stack E-Commerce Platform for Handmade Pearl & Crochet Bags
+### A Production-Ready Full Stack E-Commerce Platform for Handmade Pearl & beaded Bags
 
 **Design • Customize • Order • Track — All in One Platform**
 
@@ -29,7 +29,7 @@
 
 ## 📖 Overview
 
-**Custom Pearl** is a modern full-stack e-commerce platform built for selling handmade **Pearl** and **Crochet** bags, with complete customization support built in.
+**Custom Pearl** is a modern full-stack e-commerce platform built for selling handmade **Pearl** and **beaded** bags, with complete customization support built in.
 
 Unlike a traditional online store, customers can design their own bag — choosing category, bag type, colour, size, and dimensions, and even uploading inspiration images — before placing an order.
 
@@ -148,7 +148,7 @@ The result is a smoother shopping experience for customers and a more efficient 
 
 ### 👜 Product Catalog
 - Browse Pearl bags
-- Browse Crochet bags
+- Browse beaded bags
 - Search & filter by category
 - Detailed product pages
 

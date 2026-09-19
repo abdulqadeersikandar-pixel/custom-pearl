@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 const BAG_OPTIONS = {
   Pearls:  [ 'Evening Pearl Clutch','Mini Pearl Clutch','Mobile Crossbody Bag',"Card Holder Bag"],
-  Crochet: ['Mini Crochet Bag',  'Crochet Tote',  'Crochet Wallet','Crossbody Bag','Hobo Bag','Floral Bag','Phone Pouch Bag'],
+  beaded: ['Mini beaded Bag',  'beaded Tote',  'beaded Wallet','Crossbody Bag','Hobo Bag','Floral Bag','Phone Pouch Bag'],
 };
 
 // Dimensions per size (inches)
@@ -320,7 +320,7 @@ ${trackingId}
                       : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-pink-300'
                   }`}
                 >
-                  {cat === 'Pearls' ? '🪬 Pearl Bags' : cat === 'Crochet' ? '🧶 Crochet Bags' : `✨ ${cat}`}
+                  {cat === 'Pearls' ? '🪬 Pearl Bags' : cat === 'beaded' ? '🧶 beaded Bags' : `✨ ${cat}`}
                 </button>
               );
             }) : (

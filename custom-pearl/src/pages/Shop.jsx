@@ -64,8 +64,34 @@ const Shop = () => {
       {/* Product List ko selected category bhej rahe hain */}
       <ProductList selectedCategory={selectedCategory} />
       <Helmet>
-  <title>Shop Our Collection | Custom Pearl</title>
-  <meta name="description" content="Explore our beautiful collection of handmade pearl and crochet bags. Find your perfect match today." />
+  <title>Shop Pearl Jewelry | Custom Pearl</title>
+
+  <meta
+    name="description"
+    content="Explore Custom Pearl's collection of pearl jewelry and customized pieces. Browse our latest products and find something special."
+  />
+
+  <link
+    rel="canonical"
+    href="https://custompearl.netlify.app/shop"
+  />
+
+  <meta
+    property="og:title"
+    content="Shop Pearl Jewelry | Custom Pearl"
+  />
+
+  <meta
+    property="og:description"
+    content="Explore pearl jewelry and customized pieces from Custom Pearl."
+  />
+
+  <meta
+    property="og:url"
+    content="https://custompearl.netlify.app/shop"
+  />
+
+  <meta property="og:type" content="website" />
 </Helmet>
     </div>
   );

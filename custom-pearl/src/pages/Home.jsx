@@ -20,7 +20,7 @@ const Home = () => {
         </span>
         <h1 className="text-5xl font-bold text-pink-800 dark:text-pink-300 mb-4">Custom Pearl</h1>
         <p className="text-xl text-gray-600 dark:text-gray-300 mb-10 max-w-2xl leading-relaxed">
-          Premium handcrafted pearl &amp; crochet bags. Beautifully made, uniquely yours, delivered across Pakistan.
+          Premium handcrafted pearl &amp; beaded bags. Beautifully made, uniquely yours, delivered across Pakistan.
         </p>
         <div className="flex flex-wrap gap-4 justify-center">
           <button onClick={() => scrollTo('shop-section')}
@@ -51,12 +51,22 @@ const Home = () => {
       <Features />
       <Reviews />
       <FAQs />
-      <Helmet>
-  <title>Custom Pearl | Premium Handcrafted Bags in Pakistan</title>
-  <meta name="description" content="Shop the best handmade pearl and crochet bags in Pakistan. Custom designs available. Free delivery nationwide!" />
-  
-  <meta property="og:title" content="Custom Pearl | Handcrafted Bags" />
-  <meta property="og:description" content="Beautifully handmade pearl & crochet bags. Uniquely yours." />
+     <Helmet>
+  <title>Custom Pearl | Custom Jewelry & Pearl Collection</title>
+
+  <meta
+    name="description"
+    content="Shop beautiful pearl jewelry and customized pieces at Custom Pearl. Explore our collection and create your own custom jewelry."
+  />
+
+  <link rel="canonical" href="https://custompearl.netlify.app/" />
+
+  <meta property="og:title" content="Custom Pearl | Custom Jewelry & Pearl Collection" />
+  <meta
+    property="og:description"
+    content="Explore beautiful pearl jewelry and customized pieces at Custom Pearl."
+  />
+  <meta property="og:url" content="https://custompearl.netlify.app/" />
   <meta property="og:type" content="website" />
 </Helmet>
     </div>

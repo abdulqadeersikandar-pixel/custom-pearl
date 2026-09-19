@@ -374,8 +374,22 @@ const Checkout = () => {
         </div>
       </div>
 <Helmet>
-  <title>Secure Checkout | Custom Pearl</title>
-  <meta name="description" content="Complete your order securely at Custom Pearl. Pay via Cash on Delivery, JazzCash, EasyPaisa, or Bank Transfer." />
+  <title>Checkout | Custom Pearl</title>
+
+  <meta
+    name="description"
+    content="Complete your Custom Pearl order securely through our checkout."
+  />
+
+  <link
+    rel="canonical"
+    href="https://custompearl.netlify.app/checkout"
+  />
+
+  <meta
+    name="robots"
+    content="noindex, nofollow"
+  />
 </Helmet>
     </div>
   );

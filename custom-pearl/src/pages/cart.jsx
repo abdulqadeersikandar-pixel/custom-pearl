@@ -121,8 +121,22 @@ const Cart = () => {
         </div>
       </div>
       <Helmet>
-  <title>Your Shopping Cart | Custom Pearl</title>
-  <meta name="description" content="Review your selected handcrafted pearl and crochet bags before checkout." />
+  <title>Shopping Cart | Custom Pearl</title>
+
+  <meta
+    name="description"
+    content="Review your selected Custom Pearl products before checkout."
+  />
+
+  <link
+    rel="canonical"
+    href="https://custompearl.netlify.app/cart"
+  />
+
+  <meta
+    name="robots"
+    content="noindex, nofollow"
+  />
 </Helmet>
     </div>
   );

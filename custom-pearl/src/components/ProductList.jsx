@@ -64,7 +64,7 @@ const ProductList = () => {
   return (
     <div className="py-10 px-6 bg-white dark:bg-gray-900 transition-colors">
       <h2 className="text-3xl font-bold text-center mb-2 text-gray-800 dark:text-white">Shop Our Collection</h2>
-      <p className="text-center text-gray-500 dark:text-gray-400 mb-8 text-sm">Handcrafted pearl &amp; crochet bags</p>
+      <p className="text-center text-gray-500 dark:text-gray-400 mb-8 text-sm">Handcrafted pearl &amp; beaded bags</p>
 
       {/* Filter bar */}
       <div className="max-w-5xl mx-auto mb-8 flex flex-col md:flex-row gap-3 items-stretch">
@@ -97,7 +97,7 @@ const ProductList = () => {
                 className={`px-4 py-2.5 text-sm font-medium transition-colors border-r border-gray-200 dark:border-gray-700 last:border-none ${
                   selectedCat === cat ? 'bg-pink-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-pink-50 dark:hover:bg-gray-700'
                 }`}>
-                {cat === 'Pearls' ? '🪬 Pearls' : cat === 'Crochet' ? '🧶 Crochet' : `✨ ${cat}`}
+                {cat === 'Pearls' ? '🪬 Pearls' : cat === 'beaded' ? '🧶 beaded' : `✨ ${cat}`}
               </button>
             );
           })}
@@ -146,9 +146,9 @@ const ProductList = () => {
                   onError={e => { e.target.src = 'https://placehold.co/300x280/fdf2f8/9d174d?text=Custom+Pearl'; }} />
                 {product.Category && (
                   <span className={`absolute top-2 left-2 text-xs font-semibold px-2 py-0.5 rounded-full ${
-                    product.Category === 'Crochet' ? 'bg-purple-100 text-purple-700' : 'bg-pink-100 text-pink-700'
+                    product.Category === 'beaded' ? 'bg-purple-100 text-purple-700' : 'bg-pink-100 text-pink-700'
                   }`}>
-                    {product.Category === 'Crochet' ? '🧶' : '🪬'} {product.Category}
+                    {product.Category === 'beaded' ? '🧶' : '🪬'} {product.Category}
                   </span>
                 )}
               </div>

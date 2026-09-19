@@ -88,7 +88,7 @@ const AdminDashboard = () => {
         axios.get('https://custom-pearl-backend.onrender.com/api/checkout-orders', authConfig),
         axios.get('https://custom-pearl-backend.onrender.com/api/products'),
         axios.get('https://custom-pearl-backend.onrender.com/api/payment-settings'),
-        axios.get('https://custom-pearl-backend.onrender.com/api/categories')
+        axios.get('https://custom-pearl.onrender.com/api/categories')
       ]);
       setCustomOrders(c.data);
       setCheckoutOrders(ch.data);
@@ -192,7 +192,7 @@ const AdminDashboard = () => {
     if(!newCatName.trim()) return;
     try {
       const authConfig = await getAuthHeaders();
-      await axios.post('https://custom-pearl-backend.onrender.com/api/categories', { name: newCatName }, authConfig);
+      await axios.post('https://custom-pearl.onrender.com/api/categories', { name: newCatName }, authConfig);
       setNewCatName('');
       fetchAll();
     } catch(err) { alert('Failed to add category'); }
@@ -202,7 +202,7 @@ const AdminDashboard = () => {
     if(!window.confirm('Delete this category?')) return;
     try {
       const authConfig = await getAuthHeaders();
-      await axios.delete(`https://custom-pearl-backend.onrender.com/api/categories/${id}`, authConfig);
+      await axios.delete(`https://custom-pearl.onrender.com/api/categories/${id}`, authConfig);
       fetchAll();
     } catch(err) { alert('Failed to delete category'); }
   };
@@ -213,7 +213,7 @@ const AdminDashboard = () => {
     const updatedTypes = [...(currentTypes || []), newType];
     try {
       const authConfig = await getAuthHeaders();
-      await axios.put(`https://custom-pearl-backend.onrender.com/api/categories/${catId}`, { bagTypes: updatedTypes }, authConfig);
+      await axios.put(`https://custom-pearl.onrender.com/api/categories/${catId}`, { bagTypes: updatedTypes }, authConfig);
       setTypeInputs(prev => ({ ...prev, [catId]: '' }));
       fetchAll();
     } catch (err) { alert('Failed to add bag type'); }
@@ -223,7 +223,7 @@ const AdminDashboard = () => {
     const updatedTypes = currentTypes.filter((_, idx) => idx !== indexToRemove);
     try {
       const authConfig = await getAuthHeaders();
-      await axios.put(`https://custom-pearl-backend.onrender.com/api/categories/${catId}`, { bagTypes: updatedTypes }, authConfig);
+      await axios.put(`https://custom-pearl.onrender.com/api/categories/${catId}`, { bagTypes: updatedTypes }, authConfig);
       fetchAll();
     } catch (err) { alert('Failed to remove bag type'); }
   };
